@@ -142,7 +142,7 @@ WARNING: this is a simple implementation. The chance of generating the same UUID
                    (abbreviate-file-name (buffer-file-name))
                  "%b"))))
 
-;; *** scrolling
+;; ** scrolling
 (setq scroll-margin 0
       scroll-conservatively 100000
       scroll-preserve-screen-position 1)
@@ -153,10 +153,13 @@ WARNING: this is a simple implementation. The chance of generating the same UUID
       scroll-step 1)
 
 
-;; prevent esc-esc-esc destroying other windows
-(defadvice keyboard-escape-quit
-    (around my-keyboard-escape-quit activate)
-  (flet ((one-window-p (&optional nomini all-frames) t)) ad-do-it))
+;; ** prevent esc-esc-esc destroying other windows
+(defadvice keyboard-escape-quit (around my-keyboard-escape-quit activate)
+  (let (orig-one-window-p)
+    (fset 'orig-one-window-p (symbol-function 'one-window-p))
+    (fset 'one-window-p (lambda (&optional nomini all-frames) t))
+    (unwind-protect ad-do-it
+      (fset 'one-window-p (symbol-function 'orig-one-window-p)))))
 
 ;; ** CLEAN MODE LINE
 (defvar mode-line-cleaner-alist
@@ -229,7 +232,7 @@ want to use in the modeline *in lieu of* the original.")
 
 (add-hook 'after-change-major-mode-hook 'clean-mode-line)
 
-;; prevent M-backspace from putting deleted to kill-ring
+;; ** prevent M-backspace from putting deleted to kill-ring
 (defadvice backward-kill-word (around fix activate)
   (flet ((kill-region (b e) (delete-region b e)))
     ad-do-it))
@@ -316,8 +319,8 @@ want to use in the modeline *in lieu of* the original.")
   (add-hook hook 'fontify-keywords))
 
 
+;; ** final cleaning
 (setq ring-bell-function 'ignore)
-
 (kill-buffer "*scratch*")
 
 ;; ** FACES
@@ -340,8 +343,7 @@ want to use in the modeline *in lieu of* the original.")
  '(cscope-line-number-face ((t (:foreground "dark cyan"))))
  '(cscope-separator-face ((t (:foreground "red" :underline t :weight bold))))
  '(flyspell-duplicate ((t (:inherit nil :underline t))))
- '(helm-source-header ((t (:background "#22083397778B" :foreground "white" :weight bold :family "Sans Serif"))))
- '(highlight-symbol-face ((t (:background "yellow1"))))
+ '(highlight-symbol-face ((t (:background "MediumPurple4"))))
  '(hs-face ((t (:foreground "yellow1" :box 1))))
  '(linum ((t (:inherit (shadow default) :foreground "dark slate gray"))))
  '(powerline-active2 ((t (:inherit mode-line :background "grey40"))))
@@ -529,3 +531,7 @@ want to use in the modeline *in lieu of* the original.")
   (set-face-background 'show-paren-match-face nil)
   (set-face-foreground 'show-paren-match-face "white")
   (set-face-attribute 'show-paren-match-face nil :weight 'extra-bold))
+
+(use-package ace-jump-mode
+  :ensure t
+  :config (global-set-key (kbd "C-0") 'ace-jump-char-mode))
