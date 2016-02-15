@@ -349,7 +349,11 @@ want to use in the modeline *in lieu of* the original.")
  '(highlight-symbol-face ((t (:background "MediumPurple4"))))
  '(hs-face ((t (:foreground "yellow1" :box 1))))
  '(linum ((t (:inherit (shadow default) :foreground "dark slate gray"))))
- '(powerline-active2 ((t (:inherit mode-line :background "grey40"))))
+ '(mode-line ((t (:background "gray91" :foreground "black" :box (:line-width -1 :style released-button)))))
+ '(powerline-active1 ((t (:inherit mode-line :background "gray51"))))
+ '(powerline-active2 ((t (:inherit mode-line :background "gray59"))))
+ '(powerline-inactive1 ((t (:inherit mode-line-inactive :background "gray21"))))
+ '(powerline-inactive2 ((t (:inherit mode-line-inactive :background "gray94"))))
  '(scroll-bar ((t (:background "red" :foreground "yellow"))))
  '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
  '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
@@ -361,7 +365,7 @@ want to use in the modeline *in lieu of* the original.")
  '(tabbar-unselected-modified ((t (:inherit tabbar-unselected)))))
 
 
-(set-face-attribute 'default nil :font "PragmataPro")
+(set-face-attribute 'default nil :font "PragmataPro for Powerline")
 
 
 ;; * PACKAGES
@@ -369,7 +373,7 @@ want to use in the modeline *in lieu of* the original.")
   :ensure t)
 
 (use-package paradox
-  :ensure t
+  :ensure t 
   :config
   (setq paradox-automatically-star t)
   (setq paradox-github-token "0e43ca66bba22f85b2afbd9526b1eff567660110"))
@@ -485,6 +489,11 @@ want to use in the modeline *in lieu of* the original.")
 (use-package powerline
   :ensure t
   :config (powerline-center-theme))
+
+(use-package spaceline
+  :ensure t
+  :config
+  (setq spaceline-minor-modes-separator " "))
 
 (use-package outshine
   :ensure t
@@ -621,3 +630,11 @@ Customize `delete-window-preserve-buffer' to configure."
   (set-face-foreground 'show-paren-match-face "white")
   (set-face-attribute 'show-paren-match-face nil :weight 'extra-bold))
 
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(paradox-automatically-star t)
+ '(powerline-default-separator (quote utf-8))
+ '(spaceline-show-default-input-method nil))
