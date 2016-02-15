@@ -418,7 +418,9 @@ want to use in the modeline *in lieu of* the original.")
 
 ;; ** AUTOCOMPLETION
 (use-package company
-  :ensure t)
+  :ensure t
+  :config
+  (global-company-mode))
 
 (use-package popup
   :ensure t
@@ -517,6 +519,26 @@ want to use in the modeline *in lieu of* the original.")
   :config
   (global-set-key (kbd "C-x g") 'magit-status))
 
+
+(use-package clojure-mode
+  :ensure t
+  :init
+  (add-hook 'clojure-mode-hook #'company-mode)
+  ;; (add-hook 'clojure-mode-hook #'subword-mode)
+  ;; (add-hook 'clojure-mode-hook #'rainbow-delimiters-mode)
+  )
+
+(use-package cider
+  :ensure t
+  :init
+  (setq cider-repl-display-help-banner nil)
+  (add-hook 'cider-mode-hook 'eldoc-mode)
+  (add-hook 'cider-repl-mode-hook #'company-mode)
+  (define-key cider-repl-mode-map (kbd "C-c M-o") 'cider-repl-clear-buffer))
+
+;; (setq cider-popup-stacktraces nil)
+;; (setq cider-hide-special-buffers t)
+
 ;; ** PARENTHESES
 (use-package flex-autopair
   :ensure t)
@@ -535,3 +557,9 @@ want to use in the modeline *in lieu of* the original.")
 (use-package ace-jump-mode
   :ensure t
   :config (global-set-key (kbd "C-0") 'ace-jump-char-mode))
+
+(use-package move-text
+  :ensure t
+  :bind
+  (([(meta shift up)] . move-text-up)
+   ([(meta shift down)] . move-text-down)))
