@@ -61,6 +61,9 @@
 (global-set-key [(super w)] 'kill-this-buffer)
 (global-set-key [(super b)] 'iswitchb-buffer)
 
+(global-set-key (kbd "s--") 'text-scale-decrease)
+(global-set-key (kbd "s-=") 'text-scale-increase)
+
 ;; * GLOBAL KEYS
 (global-set-key [(control j)] 'eval-print-last-sexp)
 (global-set-key [(control c) (r)] 'replace-regexp)
@@ -368,6 +371,7 @@ want to use in the modeline *in lieu of* the original.")
 (use-package paradox
   :ensure t
   :config
+  (setq paradox-automatically-star t)
   (setq paradox-github-token "0e43ca66bba22f85b2afbd9526b1eff567660110"))
 
 ;; ** MULTUPLE CURSORS & EXPAND REGION
@@ -420,7 +424,17 @@ want to use in the modeline *in lieu of* the original.")
 (use-package company
   :ensure t
   :config
-  (global-company-mode))
+  (global-company-mode)
+  (custom-set-faces
+   '(company-preview ((t (:background "MediumPurple4" :foreground "wheat"))))
+   '(company-preview-common ((t (:inherit company-preview :background "mediumpurple4" :foreground "lightblue"))))
+   '(company-scrollbar-bg ((t (:background "#ffffff"))))
+   '(company-scrollbar-fg ((t (:background "#ffffff"))))
+   '(company-tooltip ((t (:inherit default :background "#f2f2f2"))))
+   '(company-tooltip-common ((t (:inherit font-lock-constant-face))))
+   '(company-tooltip-common-selection ((t (:inherit company-tooltip-selection :foreground "lightblue"))))
+   '(company-tooltip-selection ((t (:inherit font-lock-function-name-face)))))
+ )
 
 (use-package popup
   :ensure t
@@ -440,7 +454,7 @@ want to use in the modeline *in lieu of* the original.")
                :margin t)))
   (global-set-key (kbd "C-c d") 'describe-function-in-popup))
 
-;; ** USABILITY
+;; ** UI & VISUALS
 (use-package saveplace
   :ensure t
   :config
@@ -451,7 +465,16 @@ want to use in the modeline *in lieu of* the original.")
   :ensure t
   :config (setq tramp-default-method "scp"))
 
-;; ** VISUALS
+(use-package ace-jump-mode
+  :ensure t
+  :config (global-set-key (kbd "C-0") 'ace-jump-char-mode))
+
+(use-package move-text
+  :ensure t
+  :bind
+  (([(meta shift up)] . move-text-up)
+   ([(meta shift down)] . move-text-down)))
+
 (use-package color-theme
   :ensure t
   :config
@@ -495,6 +518,54 @@ want to use in the modeline *in lieu of* the original.")
             ("<down>"  . ignore             ))))
   (add-hook 'iswitchb-define-mode-map-hook 'iswitchb-local-keys))
 
+(use-package tabbar
+  :ensure t
+  :config
+  (setq one-buffer-one-frame-mode nil)
+  (defun tabbar-buffer-groups ()
+    "Return the list of group names the current buffer belongs to.
+This function is a custom function for tabbar-mode's tabbar-buffer-groups.
+This function group all buffers into 3 groups:
+Those Dired, those user buffer, and those emacs buffer.
+Emacs buffer are those starting with “*”."
+    (list
+     (cond
+      ((string-equal "*" (substring (buffer-name) 0 1)) "Emacs Buffer")
+      ((eq major-mode 'dired-mode) "Dired")
+      (t "User Buffer"))))
+
+  (setq tabbar-buffer-groups-function 'tabbar-buffer-groups)
+
+  (defcustom delete-window-preserve-buffer '("\*Messages\*" "\*scratch\*" "\*Help\*")
+    "Preserve these buffers when deleting window displaying them.
+When `one-buffer-one-frame-mode' or `tabbar-mode' are on,
+a buffer is killed when the last window displaying it is
+deleted by way of user interaction via high-level commands such
+as `close-window', unless the buffer name is listed in this
+customization variable, or this variable is set to `t'."
+    :group 'Aquamacs
+    :group 'frames
+    :type '(choice (repeat string)    
+                   (set (const "\*Messages\*") (const "\*scratch\*") (const "\*Help\*"))
+                   (const t)))
+  
+  (defun killable-buffer-p (buf)
+    "Returns non-nil if buffer BUF may be be killed.
+Customize `delete-window-preserve-buffer' to configure."
+    (if (or (eq t delete-window-preserve-buffer)
+            (member (get-bufname buf) delete-window-preserve-buffer))
+        nil
+      t))
+  
+  (add-to-list 'load-path "~/.emacs.d/lisp/tabbar-dholm")
+  (require 'aquamacs-tabbar)
+  (setq tabbar-key-binding-modifier-list '(super))
+  (defvar header-line-inhibit-window-list '())
+  (add-to-list 'header-line-inhibit-window-list (selected-window))
+  (tabbar-mode)
+  (global-set-key [(control tab)] 'tabbar-forward)
+  (global-set-key [(control shift tab)] 'tabbar-backward))
+
 ;; ** VISUAL BOOKMARKS
 (use-package bm
   :ensure t
@@ -519,25 +590,21 @@ want to use in the modeline *in lieu of* the original.")
   :config
   (global-set-key (kbd "C-x g") 'magit-status))
 
-
 (use-package clojure-mode
   :ensure t
   :init
-  (add-hook 'clojure-mode-hook #'company-mode)
-  ;; (add-hook 'clojure-mode-hook #'subword-mode)
-  ;; (add-hook 'clojure-mode-hook #'rainbow-delimiters-mode)
-  )
+  (add-hook 'clojure-mode-hook #'company-mode))
 
 (use-package cider
   :ensure t
   :init
   (setq cider-repl-display-help-banner nil)
+  (setq cider-popup-stacktraces nil)
+  (setq cider-hide-special-buffers t)
   (add-hook 'cider-mode-hook 'eldoc-mode)
   (add-hook 'cider-repl-mode-hook #'company-mode)
   (define-key cider-repl-mode-map (kbd "C-c M-o") 'cider-repl-clear-buffer))
 
-;; (setq cider-popup-stacktraces nil)
-;; (setq cider-hide-special-buffers t)
 
 ;; ** PARENTHESES
 (use-package flex-autopair
@@ -554,12 +621,3 @@ want to use in the modeline *in lieu of* the original.")
   (set-face-foreground 'show-paren-match-face "white")
   (set-face-attribute 'show-paren-match-face nil :weight 'extra-bold))
 
-(use-package ace-jump-mode
-  :ensure t
-  :config (global-set-key (kbd "C-0") 'ace-jump-char-mode))
-
-(use-package move-text
-  :ensure t
-  :bind
-  (([(meta shift up)] . move-text-up)
-   ([(meta shift down)] . move-text-down)))
