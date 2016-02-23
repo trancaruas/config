@@ -6,3 +6,6 @@ saveplace
 history
 /#scratch#
 /.mc-lists.el
+lisp/parinfer-mode/
+lisp/parinferlib.el
+url/
