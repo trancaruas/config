@@ -102,6 +102,12 @@
 (bind-key "s-/" 'open-dir-in-finder)
 
 ;; ** Global settings & functions
+;; *** General
+(defun read-file (file)
+  (with-temp-buffer
+    (insert-file-contents file)
+    (buffer-string)))
+
 ;; *** Macros
 (defun toggle-kbd-macro-recording-on ()
   "One-key keyboard macros: turn recording on."
@@ -609,7 +615,8 @@ With argument, do this that many times."
 (use-package paradox
   :ensure t
   :config
-  (setq paradox-automatically-star t))
+  (setq paradox-automatically-star t)
+  (setq paradox-github-token (read-file "github.token")))
 
 (use-package server
   :config
@@ -1064,7 +1071,6 @@ opposite of what that option dictates."
  '(package-selected-packages
    (quote
     (gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package tabbar swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse expand-region edn dired-k company-quickhelp color-theme bm autopair ace-jump-mode)))
- '(paradox-github-token "95fd56fa5a2e4893b1cde438892d40b98e54f611")
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
