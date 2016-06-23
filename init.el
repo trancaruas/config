@@ -609,8 +609,7 @@ With argument, do this that many times."
 (use-package paradox
   :ensure t
   :config
-  (setq paradox-automatically-star t)
-  (setq paradox-github-token "0e43ca66bba22f85b2afbd9526b1eff567660110"))
+  (setq paradox-automatically-star t))
 
 (use-package server
   :config
