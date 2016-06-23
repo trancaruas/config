@@ -5,7 +5,7 @@
 
 (setq package-archives
       '(("GNU" . "http://elpa.gnu.org/packages/")
-        ("MARMALADE" . "http://marmalade-repo.org/packages/")
+        ;; ("MARMALADE" . "https://marmalade-repo.org/packages/")
         ("MELPA" . "http://melpa.milkbox.net/packages/")
         ("ELPA" . "http://tromey.com/elpa/")))
 
@@ -21,7 +21,7 @@
 (setq use-package-verbose t)
 
 
-;; * Initial settings
+;; * Better defaults
 ;; Garbage collection thresold, default 0.76Mb
 (setq gc-cons-threshold 50000000)
 
@@ -32,6 +32,7 @@
 (setq enable-local-variables t)
 (setq-default cursor-type 'bar)
 (setq history-delete-duplicates t)
+(setq-default help-window-select t)
 (setq-default indent-tabs-mode nil)
 (setq default-indicate-empty-lines t)
 (setq large-file-warning-threshold 100000000)
@@ -51,10 +52,20 @@
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 (add-to-list 'exec-path "/usr/local/bin")
+(add-to-list 'load-path "~/.emacs.d/lisp")
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/bin"))
 
 (setq ring-bell-function 'ignore)
 (kill-buffer "*scratch*")
+
+(setq utf-translate-cjk-mode nil)
+(set-language-environment 'utf-8)
+(setq locale-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(unless (eq system-type 'windows-nt)
+  (set-selection-coding-system 'utf-8))
+(prefer-coding-system 'utf-8)
 
 ;; * Settings & functions
 ;; ** Global keys
@@ -64,12 +75,13 @@
 (global-set-key [(meta u)] 'transpose-buffers)
 (global-set-key [(meta tab)] 'other-window)
 (global-set-key (kbd "C-S-SPC") 'rectangle-mark-mode)
+(global-set-key [(control shift space)] 'rectangle-mark-mode)
 
 ;; ** Mac specific keys
 (global-set-key [(super right)] 'end-of-line)
 (global-set-key [(super left)] 'beginning-of-line)
 (global-set-key [(super w)] 'kill-this-buffer)
-;;(global-set-key [(super b)] 'iswitchb-buffer)
+(global-set-key [(super b)] 'ido-switch-buffer)
 (global-set-key (kbd "s--") 'text-scale-decrease)
 (global-set-key (kbd "s-=") 'text-scale-increase)
 (bind-key "<s-return>" 'toggle-frame-fullscreen)
@@ -89,7 +101,6 @@
       (shell-command "open ."))
 (bind-key "s-/" 'open-dir-in-finder)
 
-
 ;; ** Global settings & functions
 ;; *** Macros
 (defun toggle-kbd-macro-recording-on ()
@@ -108,6 +119,9 @@
 
 (global-set-key '[(meta f8)] 'toggle-kbd-macro-recording-on)
 (global-set-key '[(f8)] 'call-last-kbd-macro)
+
+(define-key emacs-lisp-mode-map [(control c) (control c)] 'eval-sexp-fu-eval-sexp-inner-list)
+
 
 ;; *** Commenting
 ;; TODO can be replaced with 'comment line
@@ -185,6 +199,16 @@ WARNING: this is a simple implementation. The chance of generating the same UUID
     (unwind-protect ad-do-it
       (fset 'one-window-p (symbol-function 'orig-one-window-p)))))
 
+;; *** Prevent dialogs popup
+(defadvice yes-or-no-p (around prevent-dialog activate)
+  "Prevent yes-or-no-p from activating a dialog"
+  (let ((use-dialog-box nil))
+    ad-do-it))
+(defadvice y-or-n-p (around prevent-dialog-yorn activate)
+  "Prevent y-or-n-p from activating a dialog"
+  (let ((use-dialog-box nil))
+    ad-do-it))
+
 ;; *** Prevent M-backspace from putting deleted to kill-ring
 (defun delete-word (arg)
   "Delete characters forward until encountering the end of a word.
@@ -197,89 +221,21 @@ With argument, do this that many times."
 With argument, do this that many times."
   (interactive "p")
   (delete-word (- arg)))
-(global-set-key (kbd "M-<del>") 'backward-delete-word)
-
-
-;; *** Greek letters mode line
-(require 'cl)
-(defvar mode-line-cleaner-alist
-  `((auto-fill-function         . "")
-    (smart-spacing-mode         . "")
-    (auto-complete-mode         . " α")
-    (company-mode               . " α")
-    (yas-minor-mode             . " γ")
-    (autopair-mode              . " ρ")
-    (eldoc-mode                 . " ε")
-    (undo-tree-mode             . " τ")
-    (highlight-parentheses-mode . " φ")
-    (volatile-highlights-mode   . " υ")
-    (elisp-slime-nav-mode       . " δ")
-    (workgroups-mode            . " ω")
-    (hs-minor-mode              . " χ")
-    (flex-autopair-mode         . " ψ")
-    (projectile-mode            . " π")
-    (outline-minor-mode         . " ο")
-    (abbrev-mode                . " αβ")
-    (ielm-mode                  . " εζ")
-    (auto-revert-mode           . " αρ")
-    (cider-mode                 . " ηζ")
-    (cider-repl-mode            . " ηζ")
-    (cider-interaction-mode     . " ηζ")
-    (lisp-mode                  . " ελ")
-    
-    ;; major modes
-    (org-indent-mode            . "η")
-    (iimage-mode                . "ι")
-    (isearch-mode               . "ς")
-    (clojure-test-mode          . "τ")
-    (clojure-mode               . "λ")
-    (clojurescript-mode         . "ςλ")
-    (nrepl-repl-mode            . "ηζ")
-    (emacs-lisp-mode            . "ελ")
-    (lisp-interaction-mode      . "ελ")
-    (inferior-emacs-lisp-mode   . "εζ")
-    (flyspell-mode              . "θ ")
-    (completion-list-mode       . "ς")
-    (debugger-mode              . "δ")
-    (compilation-mode           . "κ")
-    (help-mode                  . "χ")
-    (text-mode                  . "τ")
-    (fundamental-mode           . "φ")
-    (hi-lock-mode               . "")
-    (python-mode                . "π")
-    (w3m-mode                   . "ψ")
-    (org-mode                   . "ω")
-    (org-agenda-mode            . "ωα")
-    (calendar-mode              . "ωκ")
-    (shell-mode                 . "ς")
-    (package-menu-mode          . "π")
-    (markdown-mode              . "μδ"))
-  "alist for `clean-mode-line'.
- 
-when you add a new element to the alist, keep in mind that you
-must pass the correct minor/major mode symbol and a string you
-want to use in the modeline *in lieu of* the original.")
-
-(defun clean-mode-line ()
-  (interactive)
-  (loop for cleaner in mode-line-cleaner-alist
-        do (let* ((mode (car cleaner))
-                  (mode-str (cdr cleaner))
-                  (old-mode-str (cdr (assq mode minor-mode-alist))))
-             (when old-mode-str
-               (setcar old-mode-str mode-str))
-             (when (eq mode major-mode)
-               (setq mode-name mode-str)))))
-(add-hook 'after-change-major-mode-hook 'clean-mode-line)
+;;(global-unset-key (kbd "M-DEL"))
+(global-set-key (kbd "M-DEL") 'backward-delete-word)
 
 
 ;; *** Automatic special keywords highlighting
+;; TODO move fixed faces keywords highligthing to themed faces
+;; font-lock-warning-face
+;; error
+
 (setq keywords-danger-pattern
-      "\\(error\\|error\\|horrible\\|horrible\\)")
+      "\\(error\\|ERROR\\|horrible\\|HORRIBLE\\)")
 (setq keywords-critical-pattern
-      "\\(bugs\\|fixme\\|bad\\|todo\\|todo\\|xxx\\|[ii][nn][vv][aa][ll][ii][dd]\\|[ff][aa][ii][ll][ee][dd]\\|[cc][oo][rr][rr][uu][pp][tt][ee][dd]\\)")
+      "\\(bugs\\|fixme\\|bad\\|todo\\|TODO\\|xxx\\|[ii][nn][vv][aa][ll][ii][dd]\\|[ff][aa][ii][ll][ee][dd]\\|[cc][oo][rr][rr][uu][pp][tt][ee][dd]\\)")
 (setq keywords-optimal-pattern
-      "\\(done\\|done\\|good\\|good\\)")
+      "\\(done\\|DONE\\|good\\|GOOD\\)")
 
 (make-face 'keywords-danger)
 (make-face 'keywords-critical)
@@ -337,7 +293,12 @@ want to use in the modeline *in lieu of* the original.")
 (use-package expand-region
   :ensure t
   :config
-  (global-set-key [(super @)] 'er/expand-region))
+  (global-set-key [(super @)] 'er/expand-region)
+
+  ;; to mark whole word with cursor in the middle
+  (defadvice er/expand-region (before er/expand-region activate)
+    (if (not (= (point) (car (bounds-of-thing-at-point 'word))))
+        (backward-word))))
 
 ;; ** Multuple cursors 
 (use-package multiple-cursors
@@ -393,9 +354,12 @@ want to use in the modeline *in lieu of* the original.")
     (interactive)
     (if (minibufferp)
         (minibuffer-complete)
-      (if (looking-at "\\_>")
-          (company-complete-common)
-        (indent-according-to-mode)))
+      (if mark-active
+          (indent-region (region-beginning)
+                         (region-end))
+        (if (looking-at "\\_>")
+            (company-complete-common)
+          (indent-according-to-mode))))
     (when (outline-on-heading-p)
       (outline-cycle)))
   
@@ -480,7 +444,7 @@ want to use in the modeline *in lieu of* the original.")
     (message "Unloading current theme")
     (mapc #'disable-theme custom-enabled-themes))
   (load-theme 'charcoal t)
-  
+
   (bind-key "s-<f12>" 'switch-theme)
   (bind-key "s-S-<f12>" 'disable-active-theme))
 
@@ -518,19 +482,19 @@ want to use in the modeline *in lieu of* the original.")
   (setq nlinum-format " %3d ")
   (global-set-key [(control shift n)] 'nlinum-mode))
 
-(use-package iswitchb
-  :config
-  (iswitchb-mode)
-  (global-set-key [(control x) (control b)] 'iswitchb-display-buffer)
-  (defun iswitchb-local-keys ()
-    (mapc (lambda (k) 
-            (let* ((key (car k)) (fun (cdr k)))
-              (define-key iswitchb-mode-map (edmacro-parse-keys key) fun)))
-          '(("<right>" . iswitchb-next-match)
-            ("<left>"  . iswitchb-prev-match)
-            ("<up>"    . ignore)
-            ("<down>"  . ignore))))
-  (add-hook 'iswitchb-define-mode-map-hook 'iswitchb-local-keys))
+;; (use-package iswitchb
+;;   :config
+;;   (iswitchb-mode)
+;;   (global-set-key [(control x) (control b)] 'iswitchb-display-buffer)
+;;   (defun iswitchb-local-keys ()
+;;     (mapc (lambda (k)
+;;             (let* ((key (car k)) (fun (cdr k)))
+;;               (define-key iswitchb-mode-map (edmacro-parse-keys key) fun)))
+;;           '(("<right>" . iswitchb-next-match)
+;;             ("<left>"  . iswitchb-prev-match)
+;;             ("<up>"    . ignore)
+;;             ("<down>"  . ignore))))
+;;   (add-hook 'iswitchb-define-mode-map-hook 'iswitchb-local-keys))
 
 (use-package dired-k
   :ensure t
@@ -541,8 +505,109 @@ want to use in the modeline *in lieu of* the original.")
 (use-package spinner
   :ensure t)
 
+;; *** Greek letters mode line
+;; TODO swap to diminish
+;; (require 'cl)
+;; (defvar mode-line-cleaner-alist
+;;   `((auto-fill-function         . "")
+;;     (smart-spacing-mode         . "")
+;;     (auto-complete-mode         . " α")
+;;     (company-mode               . " α")
+;;     (yas-minor-mode             . " γ")
+;;     (autopair-mode              . " ρ")
+;;     (eldoc-mode                 . " ε")
+;;     (undo-tree-mode             . " τ")
+;;     (highlight-parentheses-mode . " φ")
+;;     (volatile-highlights-mode   . " υ")
+;;     (elisp-slime-nav-mode       . " δ")
+;;     (workgroups-mode            . " ω")
+;;     (hs-minor-mode              . " χ")
+;;     (flex-autopair-mode         . " ψ")
+;;     (projectile-mode            . " π")
+;;     (outline-minor-mode         . " ο")
+;;     (abbrev-mode                . " αβ")
+;;     (ielm-mode                  . " εζ")
+;;     (auto-revert-mode           . " αρ")
+;;     (cider-mode                 . " ηζ")
+;;     (cider-repl-mode            . " ηζ")
+;;     (cider-interaction-mode     . " ηζ")
+;;     (lisp-mode                  . " ελ")
+    
+;;     ;; major modes
+;;     (org-indent-mode            . "η")
+;;     (iimage-mode                . "ι")
+;;     (isearch-mode               . "ς")
+;;     (clojure-test-mode          . "τ")
+;;     (clojure-mode               . "λ")
+;;     (clojurescript-mode         . "ςλ")
+;;     (nrepl-repl-mode            . "ηζ")
+;;     (emacs-lisp-mode            . "ελ")
+;;     (lisp-interaction-mode      . "ελ")
+;;     (inferior-emacs-lisp-mode   . "εζ")
+;;     (flyspell-mode              . "θ ")
+;;     (completion-list-mode       . "ς")
+;;     (debugger-mode              . "δ")
+;;     (compilation-mode           . "κ")
+;;     (help-mode                  . "χ")
+;;     (text-mode                  . "τ")
+;;     (fundamental-mode           . "φ")
+;;     (hi-lock-mode               . "")
+;;     (python-mode                . "π")
+;;     (w3m-mode                   . "ψ")
+;;     (org-mode                   . "ω")
+;;     (org-agenda-mode            . "ωα")
+;;     (calendar-mode              . "ωκ")
+;;     (shell-mode                 . "ς")
+;;     (package-menu-mode          . "π")
+;;     (markdown-mode              . "μδ"))
+;;   "alist for `clean-mode-line'.
+ 
+;; when you add a new element to the alist, keep in mind that you
+;; must pass the correct minor/major mode symbol and a string you
+;; want to use in the modeline *in lieu of* the original.")
+
+;; (defun clean-mode-line ()
+;;   (interactive)
+;;   (loop for cleaner in mode-line-cleaner-alist
+;;         do (let* ((mode (car cleaner))
+;;                   (mode-str (cdr cleaner))
+;;                   (old-mode-str (cdr (assq mode minor-mode-alist))))
+;;              (when old-mode-str
+;;                (setcar old-mode-str mode-str))
+;;              (when (eq mode major-mode)
+;;                (setq mode-name mode-str)))))
+;; (add-hook 'after-change-major-mode-hook 'clean-mode-line)
+
+(use-package diminish
+  :ensure t
+  :config
+  (defvar mode-line-clear-alist
+    '((emacs-lisp-mode            . "ελ")
+      (company-mode               . " α")
+      (which-key-mode             .  "ω")
+      (outline-minor-mode         . " ο")))
+
+  (loop for cleaner in mode-line-clear-alist
+        do (let* ((mode (car cleaner))
+                  (mode-str (cdr cleaner)))
+             (diminish mode mode-str)))
+
+  (diminish 'emacs-lisp-mode "ελ")
+  (diminish 'rainbow-delimiters-mode "rb")
+  (diminish 'rainbow-mode "rn")
+
+  (diminish 'which-key-mode)
+  (diminish 'helm-mode " H")
+  (diminish 'outline-minor-mode " ο")
+  (diminish 'helm-mode " Χ")
+  (diminish 'flex-autopair-mode " ψ")
+  (diminish 'eldoc-mode " ε")
+  (diminish 'abbrev-mode " αβ")
+  (diminish 'auto-revert-mode)
+  (diminish 'cider-mode " ηζ"))
+
 (use-package paradox
-  :ensure t 
+  :ensure t
   :config
   (setq paradox-automatically-star t)
   (setq paradox-github-token "0e43ca66bba22f85b2afbd9526b1eff567660110"))
@@ -554,6 +619,50 @@ want to use in the modeline *in lieu of* the original.")
   (server-start)
   (remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function))
 
+(use-package eval-sexp-fu
+  :ensure t)
+
+(use-package helm
+  :ensure t
+  :config
+  (require 'highlight)
+  (require 'helm-config)
+  (require 'helm-describe-modes)
+  (global-set-key [remap describe-mode] #'helm-describe-modes)
+
+  (global-set-key (kbd "M-x") 'helm-M-x)
+  (helm-autoresize-mode t)
+  (setq-default helm-autoresize-max-height 37)
+  (setq-default helm-autoresize-min-height 37)
+
+  (global-set-key [(control x) (b)] 'helm-mini)
+  (global-set-key [(super b)] 'helm-mini)
+
+  (global-set-key [(meta s) (o)] 'helm-occur)
+  (require 'helm-describe-modes)
+
+  (helm-mode t)
+  (helm-descbinds-mode t)
+  (which-key-mode t)
+
+  (defun helm-hide-minibuffer-maybe ()
+    (when (with-helm-buffer helm-echo-input-in-header-line)
+      (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
+        (overlay-put ov 'window (selected-window))
+        (overlay-put ov 'face (let ((bg-color (face-background 'default nil)))
+                                `(:background ,bg-color :foreground ,bg-color)))
+        (setq-local cursor-type nil))))
+  (add-hook 'helm-minibuffer-set-up-hook 'helm-hide-minibuffer-maybe)
+
+  (setq helm-display-header-line t)
+  (set-face-attribute 'helm-source-header nil :height 1)
+
+  (golden-ratio-mode -1)
+  (require 'ido-vertical-mode)
+  (ido-vertical-mode t)
+  (setq ido-use-virtual-buffers t)
+  (setq ido-vertical-define-keys 'C-n-and-C-p-only)
+  (ido-mode t))
 
 ;; ** Customized Aquamacs dholm's tabbar
 (use-package tabbar
@@ -576,7 +685,6 @@ want to use in the modeline *in lieu of* the original.")
   (setq tabbar-buffer-groups-function
           (lambda ()
             (list "All")))
-  
   
   (defcustom delete-window-preserve-buffer '("\*messages\*" "\*Help\*")
     "preserve these buffers when deleting window displaying them.
@@ -613,9 +721,54 @@ even if it's the only visible frame."
   (or (fboundp 'old-delete-window)
       (fset 'old-delete-window (symbol-function 'delete-window)))
 
+  (defun tabbar-move-tab (&optional right)
+    "Move current tab to the left or to the right
+if RIGHT is set."
+    (let* ((ctabset nil)
+           (ctabs nil)
+           (ctab nil)
+           (hd nil)
+           (tl nil))
+      (and 
+       (setq ctabset (tabbar-current-tabset 't))
+       (setq ctabs (tabbar-tabs ctabset))
+       (setq ctab (tabbar-selected-tab ctabset))
+       (setq tl ctabs)
+       (setq hd '())) ;; nil
+      (while (and (cdr tl) (not (eq ctab (car tl))) (not (eq ctab (cadr tl))))
+        (setq hd (append hd (list (car tl)))
+              tl (cdr tl)))
+      (set ctabset
+           (cond 
+            ((and (not right) (null hd) (eq ctab (car tl)))
+             (append (cdr tl) (list (car tl))))
+            ((not right)
+             (append hd (list (cadr tl)) (list (car tl)) (cddr tl)))
+            ((and right (not (cddr tl)))
+             (append (list (cadr tl)) hd (list (car tl))))
+            ((and right (eq ctab (car tl)))
+             (append hd (list (cadr tl)) (list (car tl)) (cddr tl)))
+            (right
+             (append hd (list (car tl)) (list (caddr tl)) (list (cadr tl)) (cdddr tl)))
+            ))
+      (put ctabset 'template nil)
+      (tabbar-display-update)))
+
+  (defun tabbar-move-tab-left ()
+    "Move tab left."
+    (interactive)
+    (tabbar-move-tab))
+  (global-set-key [(control ?\{)] 'tabbar-move-tab-left)
+
+  (defun tabbar-move-tab-right ()
+    "Move tab right."
+    (interactive)
+    (tabbar-move-tab t))
+  (global-set-key [(control ?\})] 'tabbar-move-tab-right))
+                  
   (custom-set-faces
    '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
-   '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "pragmata pro"))))
+   '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
    '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "grey95" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey95")))))
    '(tabbar-selected-highlight ((t (:background "grey95" :foreground "black"))))
    '(tabbar-selected-modified ((t (:inherit tabbar-selected))))
@@ -638,9 +791,9 @@ even if it's the only visible frame."
   :config
   (setq bm-cycle-all-buffers t)
   (global-set-key (kbd "<f3>") 'bm-toggle)
-  (global-set-key (kbd "<m-f3>") 'bm-show-all)
+  (global-set-key (kbd "<M-f3>") 'bm-show-all)
   (global-set-key (kbd "<f4>") 'bm-next)
-  (global-set-key (kbd "<m-f4>") 'bm-previous)
+  (global-set-key (kbd "<M-f4>") 'bm-previous)
   
   (setq-default bm-buffer-persistence t)
   (add-hook' after-init-hook 'bm-repository-load)
@@ -663,7 +816,19 @@ even if it's the only visible frame."
 (use-package clojure-mode
   :ensure t
   :init
-  (add-hook 'clojure-mode-hook #'outline-minor-mode))
+  (defun add-pretty-lambda ()
+    "make some word or string show as pretty Unicode symbols"
+    (setq prettify-symbols-alist
+          '(("lambda" . 955) ; λ
+            ("fn" . 402) ; 
+            ))
+    (setq clojure--prettify-symbols-alist
+          '(("fn" . 402))))
+  
+  (add-hook 'clojure-mode-hook 'add-pretty-lambda)  
+  (add-hook 'clojure-mode-hook #'outline-minor-mode)
+  (add-hook 'clojure-mode-hook 'hideshowvis-enable)
+  (add-hook 'clojure-mode-hook #'prettify-symbols-mode))
 
 (use-package cider
   :ensure t
@@ -728,7 +893,8 @@ opposite of what that option dictates."
 
   (define-key clojure-mode-map (kbd "C-c d") 'describe-clojure-function-in-popup)
   (define-key cider-repl-mode-map (kbd "C-c d") 'describe-clojure-function-in-popup)
-  (define-key cider-repl-mode-map (kbd "C-c M-o") 'cider-repl-clear-buffer))
+  (define-key cider-repl-mode-map (kbd "C-c M-o") 'cider-repl-clear-buffer)
+  (define-key cider-mode-map (kbd "C-j") 'cider-eval-defun-to-comment))
 
 (use-package slime
   :ensure slime-company
@@ -766,19 +932,24 @@ opposite of what that option dictates."
   :ensure t)
 
 (use-package highlight-parentheses
-  :ensure paren
+  :ensure t
   :config
   (show-paren-mode t)
   (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
-  (set-face-background 'show-paren-match (face-background 'default))
-  (set-face-foreground 'show-paren-match "white")
-  (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "red"))
+  ;;(set-face-background 'show-paren-match (face-background 'default))
+  ;;(set-face-foreground 'show-paren-match "white")
+  ;;(set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "red")
+  (set-face-attribute 'show-paren-mismatch nil :weight 'extra-bold :foreground "red" :background "lemonchiffon")
+  (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background "lemonchiffon"))
 
 
 ;; ** Org-mode & documentation
 (use-package org
   :config
-  (setq org-support-shift-select t))
+  (setq org-support-shift-select t)
+  (org-defkey org-mode-map [(meta up)] 'org-backward-element)
+  (org-defkey org-mode-map [(meta down)] 'org-forward-element)
+  )
 
 (use-package ox-latex
   :config
@@ -807,12 +978,10 @@ opposite of what that option dictates."
 
 ;; * Custom faces & vars
 (custom-set-faces
- ;; custom-set-faces was added by custom.
- ;; if you edit it by hand, you could mess it up, so be careful.
- ;; your init file should contain only one such instance.
- ;; if there is more than one, they won't work right.
- '(default ((t (:font "pragmatapro for powerline"))))
- '(anzu-mode-line ((t (:foreground "purple4" :weight bold))))
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  '(bm-fringe-persistent-face ((t (:background "darkorange1" :foreground "black"))))
  '(bm-persistent-face ((t (:background "darkorange1" :foreground "black"))))
  '(company-preview ((t (:background "mediumpurple4" :foreground "wheat"))))
@@ -827,11 +996,10 @@ opposite of what that option dictates."
  '(cscope-separator-face ((t (:foreground "red" :underline t :weight bold))))
  '(flyspell-duplicate ((t (:inherit nil :underline t))))
  '(highlight-symbol-face ((t (:background "mediumpurple4"))))
- '(hs-face ((t (:foreground "yellow1" :box 1))))
- '(linum ((t (:inherit (shadow default) :foreground "dark slate gray"))))
+ '(hs-face ((t (:underline t))))
  '(scroll-bar ((t (:background "red" :foreground "yellow"))))
  '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
- '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "pragmata pro"))))
+ '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
  '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "grey95" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey95")))))
  '(tabbar-selected-highlight ((t (:background "grey95" :foreground "black"))))
  '(tabbar-selected-modified ((t (:inherit tabbar-selected))))
@@ -841,24 +1009,100 @@ opposite of what that option dictates."
  '(tooltip ((t (:background "mediumpurple4" :foreground "wheat")))))
 
 (custom-set-variables
- ;; custom-set-variables was added by custom.
- ;; if you edit it by hand, you could mess it up, so be careful.
- ;; your init file should contain only one such instance.
- ;; if there is more than one, they won't work right.
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ansi-color-faces-vector
+   [default default default italic underline success warning error])
+ '(ansi-color-names-vector
+   ["#eee8d5" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#839496"])
+ '(compilation-message-face (quote default))
+ '(cua-global-mark-cursor-color "#2aa198")
+ '(cua-normal-cursor-color "#657b83")
+ '(cua-overwrite-cursor-color "#b58900")
+ '(cua-read-only-cursor-color "#859900")
  '(custom-safe-themes
    (quote
-    ("d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879"
-     "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0"
-     "7b4d9b8a6ada8e24ac9eecd057093b0572d7008dbd912328231d0cada776065a"
-     "38ba6a938d67a452aeb1dada9d7cdeca4d9f18114e9fc8ed2b972573138d4664"
-     default))))
+    ("d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879" "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0" "7b4d9b8a6ada8e24ac9eecd057093b0572d7008dbd912328231d0cada776065a" "38ba6a938d67a452aeb1dada9d7cdeca4d9f18114e9fc8ed2b972573138d4664" default)))
+ '(fci-rule-color "#eee8d5")
+ '(helm-descbinds-window-style (quote split-window))
+ '(helm-display-header-line t)
+ '(helm-echo-input-in-header-line t)
+ '(helm-mode t)
+ '(highlight-changes-colors (quote ("#d33682" "#6c71c4")))
+ '(highlight-symbol-colors
+   (--map
+    (solarized-color-blend it "#fdf6e3" 0.25)
+    (quote
+     ("#b58900" "#2aa198" "#dc322f" "#6c71c4" "#859900" "#cb4b16" "#268bd2"))))
+ '(highlight-symbol-foreground-color "#586e75")
+ '(highlight-tail-colors
+   (quote
+    (("#eee8d5" . 0)
+     ("#B4C342" . 20)
+     ("#69CABF" . 30)
+     ("#69B7F0" . 50)
+     ("#DEB542" . 60)
+     ("#F2804F" . 70)
+     ("#F771AC" . 85)
+     ("#eee8d5" . 100))))
+ '(hl-bg-colors
+   (quote
+    ("#DEB542" "#F2804F" "#FF6E64" "#F771AC" "#9EA0E5" "#69B7F0" "#69CABF" "#B4C342")))
+ '(hl-fg-colors
+   (quote
+    ("#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3")))
+ '(ido-enable-flex-matching t)
+ '(ido-max-window-height 20)
+ '(ido-vertical-define-keys (quote C-n-C-p-up-down-left-right))
+ '(ido-vertical-show-count nil)
+ '(linum-format " %7i ")
+ '(magit-diff-use-overlays nil)
+ '(nrepl-message-colors
+   (quote
+    ("#dc322f" "#cb4b16" "#b58900" "#546E00" "#B4C342" "#00629D" "#2aa198" "#d33682" "#6c71c4")))
+ '(package-selected-packages
+   (quote
+    (gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package tabbar swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse expand-region edn dired-k company-quickhelp color-theme bm autopair ace-jump-mode)))
+ '(paradox-github-token "95fd56fa5a2e4893b1cde438892d40b98e54f611")
+ '(perl-indent-level 2)
+ '(pos-tip-background-color "#eee8d5")
+ '(pos-tip-foreground-color "#586e75")
+ '(smartrep-mode-line-active-bg (solarized-color-blend "#859900" "#eee8d5" 0.2))
+ '(term-default-bg-color "#fdf6e3")
+ '(term-default-fg-color "#657b83")
+ '(vc-annotate-background nil)
+ '(vc-annotate-color-map
+   (quote
+    ((20 . "#dc322f")
+     (40 . "#c85d17")
+     (60 . "#be730b")
+     (80 . "#b58900")
+     (100 . "#a58e00")
+     (120 . "#9d9100")
+     (140 . "#959300")
+     (160 . "#8d9600")
+     (180 . "#859900")
+     (200 . "#669b32")
+     (220 . "#579d4c")
+     (240 . "#489e65")
+     (260 . "#399f7e")
+     (280 . "#2aa198")
+     (300 . "#2898af")
+     (320 . "#2793ba")
+     (340 . "#268fc6")
+     (360 . "#268bd2"))))
+ '(vc-annotate-very-old-color nil)
+ '(weechat-color-list
+   (quote
+    (unspecified "#fdf6e3" "#eee8d5" "#990A1B" "#dc322f" "#546E00" "#859900" "#7B6000" "#b58900" "#00629D" "#268bd2" "#93115C" "#d33682" "#00736F" "#2aa198" "#657b83" "#839496")))
+ '(which-key-echo-keystrokes 0.02)
+ '(which-key-idle-delay 0.4)
+ '(which-key-sort-order (quote which-key-key-order-alpha))
+ '(xterm-color-names
+   ["#eee8d5" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#073642"])
+ '(xterm-color-names-bright
+   ["#fdf6e3" "#cb4b16" "#93a1a1" "#839496" "#657b83" "#6c71c4" "#586e75" "#002b36"]))
 
-(setq utf-translate-cjk-mode nil)
-(set-language-environment 'utf-8)
-(setq locale-coding-system 'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(unless (eq system-type 'windows-nt)
-  (set-selection-coding-system 'utf-8))
-(prefer-coding-system 'utf-8)
 
