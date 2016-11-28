@@ -4,21 +4,49 @@
 (require 'package)
 
 (setq package-archives
-      '(("GNU" . "http://elpa.gnu.org/packages/")
-        ;; ("MARMALADE" . "https://marmalade-repo.org/packages/")
-        ("MELPA" . "http://melpa.org/packages/")
-        ("ELPA" . "http://tromey.com/elpa/")))
+      '(("GNU" . "https://elpa.gnu.org/packages/")
+        ("ORGMODE" . "http://orgmode.org/elpa/")
+        ("MARMALADE" . "https://marmalade-repo.org/packages/")
+        ("MELPA" . "https://melpa.org/packages/")
+        ("ELPA" . "https://tromey.com/elpa/")))
 
 (package-initialize)
 
 (unless package-archive-contents
-  (package-refresh-contents))
+   (package-refresh-contents))
 
 (unless (package-installed-p 'use-package)
   (package-install 'use-package))
 
 (require 'use-package)
 (setq use-package-verbose t)
+
+;; LOAD ORG AS EARLY AS POSSIBLE TO PREVENT BUILT-IN ORG FROM INITIALIZE
+;; BUILT-IN ORG CAUSE PROBLEMS
+;; TODO: check
+;; (setq package-load-list '((org "9.0.1") all))
+;; (setq package-load-list '((org nil) all))
+
+(use-package org
+  :ensure t
+  ;; :bind
+  ;; (([(control c) (r)] . vr/replace)
+  ;;  ([(control c) (q)] . vr/query-replace)
+  ;;  ([(control c) (m)] . vr/mc-mark)))
+
+
+  :bind
+  (
+   ;; ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
+   :map org-mode-map
+   ([(meta up)] . org-backward-element)
+   ([(meta down)] . org-forward-element)
+   ([(control tab)] . tabbar-forward)
+   )
+        
+  :init
+  (setq org-support-shift-select t)
+  (setq-default org-hide-emphasis-markers t))
 
 
 ;; * BETTER DEFAULTS
@@ -74,7 +102,6 @@
 (global-set-key [(control w)] 'backward-kill-word)
 (global-set-key [(meta u)] 'transpose-buffers)
 (global-set-key [(meta tab)] 'other-window)
-(global-set-key (kbd "C-S-SPC") 'rectangle-mark-mode)
 (global-set-key [(control shift space)] 'rectangle-mark-mode)
 
 ;; ** Mac specific keys
@@ -82,8 +109,10 @@
 (global-set-key [(super left)] 'beginning-of-line)
 (global-set-key [(super w)] 'kill-this-buffer)
 (global-set-key [(super b)] 'ido-switch-buffer)
-(global-set-key (kbd "s--") 'text-scale-decrease)
-(global-set-key (kbd "s-=") 'text-scale-increase)
+(global-set-key [(super ?-)] 'text-scale-decrease)
+;; (global-set-key (kbd "s--") 'text-scale-decrease)
+(global-set-key [(super ?=)] 'text-scale-increase)
+;; (global-set-key (kbd "s-=") 'text-scale-increase)
 (global-set-key [(super return)] 'toggle-frame-fullscreen)
 
 ;; ** enclose selection in parens
@@ -200,7 +229,7 @@ WARNING: this is a simple implementation. The chance of generating the same UUID
            (random (expt 16 4))
            (random (expt 16 6))
            (random (expt 16 6)))))
-(global-set-key (kbd "C-x p") 'insert-random-uuid)
+(global-set-key (kbd "C-x u") 'insert-random-uuid)
 
 ;; *** Buffer title
 (setq frame-title-format
@@ -306,13 +335,20 @@ With argument, do this that many times."
 
 
 ;; * PACKAGES
-;; ** Expand region
+;; ** Editing
+(use-package visual-regexp
+  :ensure t
+  :bind
+  (([(control c) (r)] . vr/replace)
+   ([(control c) (q)] . vr/query-replace)
+   ([(control c) (m)] . vr/mc-mark)))
+
 ;; TODO relations between expand region / multi-cursor / highlight word under cursor
 (use-package expand-region
   :ensure t
-  :bind (([(super @)] . er/expand-region))
+  :bind (([(super @)] . er/expand-region)
+         ([(control =)] . er/expand-region))
   :config
-
   ;; to mark whole word with cursor in the middle
   (defadvice er/expand-region (before er/expand-region activate)
     (if (not (= (point) (car (bounds-of-thing-at-point 'word))))
@@ -363,9 +399,11 @@ With argument, do this that many times."
   ;;(setq highlight-symbol-on-navigation-p t)
   )
 
+
 ;; ** Autocompletion & popup documentation
 (use-package company
   :ensure t
+  :bind (([(tab)] . indent-or-complete))
   :init
   (global-company-mode '(not minibuffer-mode))
 
@@ -381,8 +419,6 @@ With argument, do this that many times."
           (indent-according-to-mode))))
     (when (outline-on-heading-p)
       (outline-cycle)))
-  
-  (global-set-key [(tab)] 'indent-or-complete)
   
   (custom-set-faces
    '(tooltip ((t (:background "mediumpurple4" :foreground "wheat"))))
@@ -401,7 +437,19 @@ With argument, do this that many times."
   :ensure t
   :config
   (company-quickhelp-mode 1))
-  
+
+(use-package company-emoji
+  :ensure t
+  :init
+  (add-to-list 'company-backends 'company-emoji)
+  (defun --set-emoji-font (frame)
+    "Adjust the font settings of FRAME so Emacs can display emoji properly."
+    (if (eq system-type 'darwin)
+        (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") frame 'prepend)
+      (set-fontset-font t 'symbol (font-spec :family "Symbola") frame 'prepend)))
+  (--set-emoji-font nil)
+  (add-hook 'after-make-frame-functions '--set-emoji-font))
+
 (use-package popup
   :ensure t
   :bind ([(control c) (d)] . describe-function-in-popup)
@@ -417,8 +465,31 @@ With argument, do this that many times."
                  :point (point)
                  :around t
                  :height 30
+                 :scroll-bar t
+                 :margin t))))
+
+(use-package osx-dictionary
+  :ensure t
+  :bind ([(super shift d)] . popup-osx-dictionary)
+  :init
+  (defun popup-osx-dictionary ()
+    (interactive)
+    (let* ((thing (osx-dictionary--search (thing-at-point 'symbol))))
+      (popup-tip thing
+                 :point (point)
+                 :around t
+                 :height 30
                  :scroll-bar nil
                  :margin t))))
+
+(use-package google-translate
+  :bind ([(super shift t)] . google-translate-at-point)
+  :init
+  (require 'google-translate-default-ui)
+  (setq google-translate-default-source-language "en"
+        google-translate-default-target-language "ru"
+        google-translate-output-destination 'popup))
+
 
 ;; ** UI & UX
 ;; *** Smooth scrolling
@@ -509,8 +580,7 @@ With argument, do this that many times."
 (use-package hideshowvis
   :ensure t
   :bind
-  (([(control -)] . hs-toggle-hiding)
-   ([(control =)] . hs-toggle-hiding))
+  (([(control -)] . hs-toggle-hiding))
   :config
   ;; https://gist.github.com/jasonm23/514946
   (hideshowvis-symbols)
@@ -528,6 +598,7 @@ With argument, do this that many times."
   :bind (:map dired-mode-map
               (([(k)] . dired-k)))
   :init
+  (require 'dired)
   (add-hook 'dired-initial-position-hook 'dired-k))
 
 (use-package spinner
@@ -614,7 +685,7 @@ With argument, do this that many times."
   (defvar mode-line-clear-alist
     '((emacs-lisp-mode            . "ελ")
       (company-mode               . " α")
-      (which-key-mode             .  "ω")
+      (which-key-mode             . " ω")
       (outline-minor-mode         . " ο")
       (clojure-mode               . "λ")
       (volatile-highlights-mode   . " ƕ")
@@ -628,6 +699,7 @@ With argument, do this that many times."
              (diminish mode mode-str)))
 
   (add-hook 'emacs-lisp-mode-hook (lambda () (setq mode-name "ελ")))
+  (add-hook 'clojure-mode-hook (lambda () (setq mode-name "λ")))
   
   (diminish 'emacs-lisp-mode "ελ")
   (diminish 'rainbow-delimiters-mode "rb")
@@ -647,6 +719,8 @@ With argument, do this that many times."
   (diminish 'volatile-highlights-mode " νι")
   (diminish 'auto-revert-mode " αρ")
   (diminish 'yas/minor-mode " γς")
+  ;; (diminish 'clojure-mode "λ")
+  (diminish 'git-gutter+-mode " ʒ")
   )
 
 (use-package paradox
@@ -713,18 +787,30 @@ With argument, do this that many times."
   (setq ido-use-virtual-buffers t)
   (setq ido-vertical-define-keys 'C-n-and-C-p-only)
   ;; (ido-mode t)
-  )
+
+  ;; prevent messing with frames
+  (require 'shackle)
+  (setq helm-display-function #'pop-to-buffer)
+  (setq shackle-rules '(("\\`\\*helm.*?\\*\\'" :regexp t :align t :ratio 0.46)))
+  (shackle-mode))
 
 ;; ** Customized Aquamacs dholm's tabbar
 (use-package tabbar
   :ensure t
+  :load-path "~/.emacs.d/lisp/tabbar-dholm"
   :bind (([(control tab)] . tabbar-forward)
          ([(control shift tab)] . tabbar-backward)
          ([(super \[)] . tabbar-backward)
-         ([(super \])] . tabbar-forward))
+         ([(super \])] . tabbar-forward)
+         ([(super \{)] . tabbar-move-tab-left)
+         ([(super \})] . tabbar-move-tab-right))
   :config
+  (require 'aquamacs-tabbar)
   (setq one-buffer-one-frame-mode t)
+  (setq tabbar-key-binding-modifier-list '(super))
   (setq tabbar-buffer-groups-function (lambda () (list "All")))
+  (defvar header-line-inhibit-window-list '())
+  (add-to-list 'header-line-inhibit-window-list (selected-window))
   
   (defcustom delete-window-preserve-buffer '("\*messages\*" "\*Help\*")
     "preserve these buffers when deleting window displaying them.
@@ -798,13 +884,11 @@ if RIGHT is set."
     "Move tab left."
     (interactive)
     (tabbar-move-tab))
-  (global-set-key [(super \{)] 'tabbar-move-tab-left)
 
   (defun tabbar-move-tab-right ()
     "Move tab right."
     (interactive)
     (tabbar-move-tab t))
-  (global-set-key [(super ?\})] 'tabbar-move-tab-right)
                   
   (custom-set-faces
    '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
@@ -815,20 +899,13 @@ if RIGHT is set."
    '(tabbar-separator ((t (:inherit tabbar-default :background "grey50" :foreground "grey50"))))
    '(tabbar-unselected-highlight ((t (:background "grey75" :foreground "black"))))
    '(tabbar-unselected-modified ((t (:inherit tabbar-unselected)))))
-
-  ;; :load-path
-  (add-to-list 'load-path "~/.emacs.d/lisp/tabbar-dholm")
-  (require 'aquamacs-tabbar)
-  (setq tabbar-key-binding-modifier-list '(super))
-  (defvar header-line-inhibit-window-list '())
-  (add-to-list 'header-line-inhibit-window-list (selected-window))
-  (tabbar-mode))
+  (tabbar-mode t))
 
 ;; ** Visual bookmarks
 (use-package bm
   :ensure t
   :bind (([(f3)] . bm-toggle)
-         ([meta f3] . bm-show-all)
+         ([(meta f3)] . bm-show-all)
          ([(meta f4)] . bm-previous))
   :config
   (setq bm-cycle-all-buffers t)  
@@ -879,16 +956,19 @@ if RIGHT is set."
 
 (use-package cider
   :ensure t
-  :bind (:map clojure-mode-map
+  :bind (:map cider-repl-mode-map
+              ([(control c) (d)] . describe-clojure-function-in-popup)
+              ([(control c) (meta o)] . cider-repl-clear-buffer)
+              
+              :map cider-mode-map
+              ([(control c) (control d) (control c)] . cider-clojuredoc-web)
+              ([(control j)] . cider-eval-defun-to-comment)
+        
+              :map clojure-mode-map
               ([(control c) (control d) (control c)] . cider-clojuredoc-web)
               ([(control c) (d)] . describe-clojure-function-in-popup))
-        (:map cider-mode-map
-              ([(control c) (control d) (control c)] . cider-clojuredoc-web)
-              ([(control j)] . cider-eval-defun-to-comment))
-        (:map cider-repl-mode-map
-              ([(control c) (d)] . describe-clojure-function-in-popup)
-              ([(control c) (meta o)] . cider-repl-clear-buffer))
   :init
+  (require 'popup)
   (setq cider-repl-display-help-banner nil)
   (setq cider-popup-stacktraces nil)
   (setq cider-hide-special-buffers t)
@@ -1007,9 +1087,13 @@ opposite of what that option dictates."
     ;; (add-hook 'before-save-hook 'gofmt-before-save)
     (if (not (string-match "go" compile-command))
       (set (make-local-variable 'compile-command)
-           "go build -v && go test -v && go vet"))
-    )
-  (add-hook 'go-mode-hook 'local-go-mode-hook))
+           "go build -v && go test -v && go vet")))
+  (add-hook 'go-mode-hook 'local-go-mode-hook)
+  (add-hook 'go-mode-hook #'gorepl-mode))
+
+(use-package git-timemachine
+  :ensure t
+  :bind ([(control x) (t)] . git-timemachine-toggle))
 
 ;; ** Parentheses management
 (use-package flex-autopair
@@ -1021,8 +1105,9 @@ opposite of what that option dictates."
   (show-paren-mode t)
   (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
   
-  ;; (set-face-attribute 'show-paren-mismatch nil :weight 'extra-bold :foreground "red" :background "lemonchiffon")
-  (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background "lemonchiffon")
+  (set-face-attribute 'show-paren-mismatch nil :weight 'extra-bold :foreground "red" :background "lemonchiffon")
+  ;; (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background "lemonchiffon")
+  (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background (face-background 'default))
 
   (defadvice load-theme (after load-theme-after activate)
     ;; (set-face-attribute 'show-paren-mismatch nil :weight 'extra-bold :foreground "red" :background "lemonchiffon")
@@ -1037,41 +1122,44 @@ opposite of what that option dictates."
   :config
   (volatile-highlights-mode t))
 
-;; ** Org-mode & markdown
-(use-package org
+(use-package git-gutter-fringe+
   :ensure t
-  :bind (:map org-mode-map
-              ([meta up] . org-backward-element)
-              ([meta down] . org-forward-element)
-              ([(control tab)] . tabbar-forward))
-  :init
-  (setq org-support-shift-select t)
-  (setq-default org-hide-emphasis-markers t)
-  ;; (org-defkey org-mode-map [(meta up)] 'org-backward-element)
-  ;; (org-defkey org-mode-map [(meta down)] 'org-forward-element)
-  ;; (org-defkey org-mode-map [(control tab)] 'tabbar-forward)
-  (global-set-key [(control x) (o)] (lambda () (interactive) (find-file "~/Sync/node.org"))))
+  :config (global-git-gutter+-mode))
+
+
+;; ** Org-mode & markdown
+;; (use-package org
+;;   :ensure t
+;;   :bind
+;;   (:map org-mode-map
+;;         ([meta up] . org-backward-element)
+;;         ([meta down] . org-forward-element)
+;;         ([(control tab)] . tabbar-forward))
+;;   ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
+;;   :init
+;;   (setq org-support-shift-select t)
+;;   (setq-default org-hide-emphasis-markers t))
 
 (use-package org-bullets
   :ensure t
   :config
   (add-hook 'org-mode-hook 'org-bullets-mode))
 
-(use-package ox-latex
-  :config
-  (setenv "path" (concat (getenv "path") ":/usr/local/texlive/2015/bin/x86_64-darwin"))
-  (setq exec-path (append exec-path '("/usr/local/texlive/2015/bin/x86_64-darwin")))
-  (setq org-src-tab-acts-natively t)
-  (setq org-src-fontify-natively t)
+;; (use-package ox-latex
+;;   :config
+;;   (setenv "path" (concat (getenv "path") ":/usr/local/texlive/2015/bin/x86_64-darwin"))
+;;   (setq exec-path (append exec-path '("/usr/local/texlive/2015/bin/x86_64-darwin")))
+;;   (setq org-src-tab-acts-natively t)
+;;   (setq org-src-fontify-natively t)
 
-  (setq org-latex-listings 'minted)
-  (add-to-list 'org-latex-packages-alist '("" "minted"))
-  (add-to-list 'org-latex-packages-alist '("" "cmap"))
-  (add-to-list 'org-latex-packages-alist '("" "listings"))
-  (add-to-list 'org-latex-packages-alist '("" "color"))
-  (add-to-list 'org-latex-packages-alist '("english,russian" "babel"))
-  (add-to-list 'org-latex-packages-alist '("t2a" "fontenc"))
-  (add-to-list 'org-latex-packages-alist '("utf8" "inputenc")))
+;;   (setq org-latex-listings 'minted)
+;;   (add-to-list 'org-latex-packages-alist '("" "minted"))
+;;   (add-to-list 'org-latex-packages-alist '("" "cmap"))
+;;   (add-to-list 'org-latex-packages-alist '("" "listings"))
+;;   (add-to-list 'org-latex-packages-alist '("" "color"))
+;;   (add-to-list 'org-latex-packages-alist '("english,russian" "babel"))
+;;   (add-to-list 'org-latex-packages-alist '("t2a" "fontenc"))
+;;   (add-to-list 'org-latex-packages-alist '("utf8" "inputenc")))
 
 (use-package markdown-mode
   :ensure t
@@ -1090,11 +1178,16 @@ opposite of what that option dictates."
  ;; If there is more than one, they won't work right.
  '(bm-fringe-persistent-face ((t (:background "darkorange1" :foreground "black"))))
  '(bm-persistent-face ((t (:background "darkorange1" :foreground "black"))))
+ '(calendar-today ((t (:underline t :weight bold))))
  '(cscope-line-number-face ((t (:foreground "dark cyan"))))
  '(cscope-separator-face ((t (:foreground "red" :underline t :weight bold))))
  '(flyspell-duplicate ((t (:inherit nil :underline t))))
- '(highlight-symbol-face ((t (:background "mediumpurple4"))))
  '(hs-face ((t (:underline t))))
+ '(org-agenda-date ((t (:foreground "#715ab1" :height 1))))
+ '(org-agenda-date-today ((t (:inherit nil :foreground "#715ab1" :overline t :underline t :height 1))))
+ '(org-block ((t (:background "#fbf8ef" :foreground "#655370"))))
+ '(org-block-begin-line ((t (:background "#fbf8ef" :foreground "#9380b2"))))
+ '(org-block-end-line ((t (:background "#fbf8ef" :foreground "#9380b2"))))
  '(scroll-bar ((t (:background "red" :foreground "yellow"))))
  '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
  '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
@@ -1112,8 +1205,6 @@ opposite of what that option dictates."
  ;; If there is more than one, they won't work right.
  '(ansi-color-faces-vector
    [default default default italic underline success warning error])
- '(ansi-color-names-vector
-   ["#eee8d5" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#839496"])
  '(compilation-message-face (quote default))
  '(cua-global-mark-cursor-color "#2aa198")
  '(cua-normal-cursor-color "#657b83")
@@ -1167,16 +1258,18 @@ opposite of what that option dictates."
  '(org-startup-truncated nil)
  '(package-selected-packages
    (quote
-    (delight popwin shackle calfw org-mac-iCal helm-ag go-complete yasnippet-bundle web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary tabbar-ruler mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package tabbar swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse expand-region edn dired-k company-quickhelp color-theme bm ace-jump-mode)))
+    (helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete yasnippet-bundle web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
+ '(powerline-default-separator (quote utf-8))
  '(rainbow-delimiters-max-face-count 1)
  '(smartrep-mode-line-active-bg (solarized-color-blend "#859900" "#eee8d5" 0.2))
  '(sml/active-background-color "#34495e")
  '(sml/active-foreground-color "#ecf0f1")
  '(sml/inactive-background-color "#dfe4ea")
  '(sml/inactive-foreground-color "#34495e")
+ '(tabbar-mode t nil (tabbar))
  '(term-default-bg-color "#fdf6e3")
  '(term-default-fg-color "#657b83")
  '(vc-annotate-background nil)
