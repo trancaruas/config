@@ -10,6 +10,7 @@
         ("MELPA" . "https://melpa.org/packages/")
         ("ELPA" . "https://tromey.com/elpa/")))
 
+;; (setq package-load-list '((org "9.0.1") all))
 (package-initialize)
 
 (unless package-archive-contents
@@ -27,26 +28,18 @@
 ;; (setq package-load-list '((org "9.0.1") all))
 ;; (setq package-load-list '((org nil) all))
 
-(use-package org
-  :ensure t
-  ;; :bind
-  ;; (([(control c) (r)] . vr/replace)
-  ;;  ([(control c) (q)] . vr/query-replace)
-  ;;  ([(control c) (m)] . vr/mc-mark)))
-
-
-  :bind
-  (
-   ;; ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
-   :map org-mode-map
-   ([(meta up)] . org-backward-element)
-   ([(meta down)] . org-forward-element)
-   ([(control tab)] . tabbar-forward)
-   )
-        
-  :init
-  (setq org-support-shift-select t)
-  (setq-default org-hide-emphasis-markers t))
+;; (use-package org
+;;   :ensure t
+;;   :bind
+;;   (
+;;    ;; ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
+;;    :map org-mode-map
+;;    ([(meta up)] . org-backward-element)
+;;    ([(meta down)] . org-forward-element)
+;;    ([(control tab)] . tabbar-forward))
+;;   :init
+;;   (setq org-support-shift-select t)
+;;   (setq-default org-hide-emphasis-markers t))
 
 
 ;; * BETTER DEFAULTS
@@ -720,8 +713,7 @@ With argument, do this that many times."
   (diminish 'auto-revert-mode " αρ")
   (diminish 'yas/minor-mode " γς")
   ;; (diminish 'clojure-mode "λ")
-  (diminish 'git-gutter+-mode " ʒ")
-  )
+  (diminish 'git-gutter+-mode " ʒ"))
 
 (use-package paradox
   :ensure t
@@ -933,8 +925,19 @@ if RIGHT is set."
   :init
   (yas/initialize))
 
+(use-package clj-refactor
+  :ensure t
+  :init
+  (setq cljr-warn-on-eval nil)
+  (cljr-add-keybindings-with-prefix "C-x '"))
+
+(use-package cljr-helm
+  :ensure t)
+
 (use-package clojure-mode
   :ensure t
+  :bind (:map clojure-mode-map
+              ([(control x) (\")] . cljr-helm))
   :init
   (defun add-pretty-lambda ()
     "make some word or string show as pretty Unicode symbols"
@@ -949,6 +952,7 @@ if RIGHT is set."
   (add-hook 'clojure-mode-hook 'outline-minor-mode)
   (add-hook 'clojure-mode-hook 'hideshowvis-enable)
   (add-hook 'clojure-mode-hook 'prettify-symbols-mode)
+  (add-hook 'clojure-mode-hook 'clj-refactor-mode)
   
   :config
   (define-clojure-indent
@@ -1128,6 +1132,20 @@ opposite of what that option dictates."
 
 
 ;; ** Org-mode & markdown
+
+(use-package org
+  :ensure t
+  :bind
+  (
+   ;; ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
+   :map org-mode-map
+   ([(meta up)] . org-backward-element)
+   ([(meta down)] . org-forward-element)
+   ([(control tab)] . tabbar-forward))
+  :init
+  (setq org-support-shift-select t)
+  (setq-default org-hide-emphasis-markers t))
+
 ;; (use-package org
 ;;   :ensure t
 ;;   :bind
@@ -1182,7 +1200,10 @@ opposite of what that option dictates."
  '(cscope-line-number-face ((t (:foreground "dark cyan"))))
  '(cscope-separator-face ((t (:foreground "red" :underline t :weight bold))))
  '(flyspell-duplicate ((t (:inherit nil :underline t))))
- '(hs-face ((t (:underline t))))
+ '(git-gutter+-added ((t (:foreground "SpringGreen4" :weight normal))))
+ '(git-gutter+-deleted ((t (:foreground "firebrick3" :weight normal))))
+ '(git-gutter+-modified ((t (:foreground "MediumOrchid2" :weight bold))))
+ '(hs-face ((t (:foreground "dark cyan" :underline (:color "black" :style wave) :weight normal))))
  '(org-agenda-date ((t (:foreground "#715ab1" :height 1))))
  '(org-agenda-date-today ((t (:inherit nil :foreground "#715ab1" :overline t :underline t :height 1))))
  '(org-block ((t (:background "#fbf8ef" :foreground "#655370"))))
@@ -1258,7 +1279,7 @@ opposite of what that option dictates."
  '(org-startup-truncated nil)
  '(package-selected-packages
    (quote
-    (helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete yasnippet-bundle web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
+    (cljr-helm helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete yasnippet-bundle web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
