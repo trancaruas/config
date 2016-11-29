@@ -1132,7 +1132,6 @@ opposite of what that option dictates."
 
 
 ;; ** Org-mode & markdown
-
 (use-package org
   :ensure t
   :bind
@@ -1236,6 +1235,8 @@ opposite of what that option dictates."
     ("d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879" "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0" "7b4d9b8a6ada8e24ac9eecd057093b0572d7008dbd912328231d0cada776065a" "38ba6a938d67a452aeb1dada9d7cdeca4d9f18114e9fc8ed2b972573138d4664" default)))
  '(default-input-method "TeX")
  '(fci-rule-color "#eee8d5")
+ '(git-gutter-fr+-side (quote right-fringe))
+ '(global-git-gutter+-mode t)
  '(helm-descbinds-window-style (quote split-window))
  '(helm-display-header-line t)
  '(helm-echo-input-in-header-line t)
