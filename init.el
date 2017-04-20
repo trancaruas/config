@@ -120,7 +120,7 @@
 (set-frame-parameter nil 'alpha transparency-level)
 (add-hook 'after-make-frame-functions
           (lambda (selected-frame) (set-frame-parameter selected-frame 'alpha transparency-level)))
-(setq ns-use-native-fullscreen nil)
+(setq ns-use-native-fullscreen t)
 
 ;; *** Open current dir in Finder
 (defun open-dir-in-finder ()
@@ -136,6 +136,7 @@
     (insert-file-contents file)
     (buffer-string)))
 
+;; w/a for solarized theme absent defun
 (defun solarized-color-blend (color1 color2 alpha)
   "Blends COLOR1 onto COLOR2 with ALPHA.
 COLOR1 and COLOR2 should be color names (e.g. \"white\") or RGB
@@ -266,9 +267,7 @@ With argument, do this that many times."
 
 ;; *** Automatic special keywords highlighting
 ;; TODO move fixed faces keywords highligthing to themed faces
-;; font-lock-warning-face
-;; error
-
+;; find app^W package for this
 (setq keywords-danger-pattern
       "\\(error\\|ERROR\\|horrible\\|HORRIBLE\\)")
 (setq keywords-critical-pattern
@@ -285,7 +284,7 @@ With argument, do this that many times."
 (set-face-attribute 'keywords-optimal nil :foreground "mediumspringgreen" :background nil :weight 'bold)
 
 ;; Set up highlighting of special words for proper selected major modes only
-(dolist (mode '(lisp-interaction-mode
+(dolist (mode '(lisp-interaction-mode 
                 emacs-lisp-mode
                 fundamental-mode
                 svn-log-view-mode
@@ -554,7 +553,7 @@ With argument, do this that many times."
 
 (use-package powerline
   :ensure t
-  :init
+  :config
   (powerline-center-theme)
   (setq powerline-default-separator (quote utf-8)))
 
@@ -566,7 +565,7 @@ With argument, do this that many times."
 
 (use-package outshine
   :ensure outline
-  :init
+  :config
   (add-hook 'outline-minor-mode-hook 'outshine-hook-function)
   (add-hook 'emacs-lisp-mode-hook 'outline-minor-mode))
 
@@ -684,6 +683,7 @@ With argument, do this that many times."
       (volatile-highlights-mode   . " ƕ")
       (command-log-mode           . " ς")
       (git-gutter+-mode           . " ʒ")
+
       (org-mode                   . "Ω")))
 
   (loop for cleaner in mode-line-clear-alist
@@ -691,8 +691,11 @@ With argument, do this that many times."
                   (mode-str (cdr cleaner)))
              (diminish mode mode-str)))
 
+  ;; TODO move to alist/plist and loop processing
   (add-hook 'emacs-lisp-mode-hook (lambda () (setq mode-name "ελ")))
   (add-hook 'clojure-mode-hook (lambda () (setq mode-name "λ")))
+  (add-hook 'org-mode-hook (lambda () (setq mode-name "Ω")))
+  (add-hook 'message-buffer-mode (lambda () (setq mode-name "Μ")))
   
   (diminish 'emacs-lisp-mode "ελ")
   (diminish 'rainbow-delimiters-mode "rb")
@@ -713,7 +716,9 @@ With argument, do this that many times."
   (diminish 'auto-revert-mode " αρ")
   (diminish 'yas/minor-mode " γς")
   ;; (diminish 'clojure-mode "λ")
-  (diminish 'git-gutter+-mode " ʒ"))
+  (diminish 'git-gutter+-mode " ʒ")
+  (diminish 'clj-refactor-mode " λρ")
+  )
 
 (use-package paradox
   :ensure t
@@ -798,12 +803,17 @@ With argument, do this that many times."
          ([(super \})] . tabbar-move-tab-right))
   :config
   (require 'aquamacs-tabbar)
-  (setq one-buffer-one-frame-mode t)
+  ;; (require 'one-buffer-one-frame)
+  (setq one-buffer-one-frame-mode nil)
   (setq tabbar-key-binding-modifier-list '(super))
   (setq tabbar-buffer-groups-function (lambda () (list "All")))
   (defvar header-line-inhibit-window-list '())
   (add-to-list 'header-line-inhibit-window-list (selected-window))
-  
+
+  ;; W/A for aquamacs native functions
+  (defun ns-frame-is-on-active-space-p (frame) t)
+  (defun frame-iconified-p (frame) t)
+
   (defcustom delete-window-preserve-buffer '("\*messages\*" "\*Help\*")
     "preserve these buffers when deleting window displaying them.
 when `one-buffer-one-frame-mode' or `tabbar-mode' are on,
@@ -824,7 +834,7 @@ customize `delete-window-preserve-buffer' to configure."
             (member (get-bufname buf) delete-window-preserve-buffer))
         nil
       t))
-
+  
   (defun aquamacs-delete-window (&optional window)
     "remove window from the display.  default is `selected-window'.
 if window is the only one in its frame, then `delete-frame' too,
@@ -897,6 +907,7 @@ if RIGHT is set."
 (use-package bm
   :ensure t
   :bind (([(f3)] . bm-toggle)
+         ([(f4)] . bm-next)
          ([(meta f3)] . bm-show-all)
          ([(meta f4)] . bm-previous))
   :config
@@ -923,7 +934,8 @@ if RIGHT is set."
 (use-package yasnippet
   :ensure t
   :init
-  (yas/initialize))
+  ;; (yas/initialize)
+  )
 
 (use-package clj-refactor
   :ensure t
@@ -1033,8 +1045,9 @@ opposite of what that option dictates."
 (use-package command-log-mode
   :ensure t
   :bind ([(control x) (l)] . clm/toggle-command-log-buffer)
+  :diminish (command-log-mode . " ς")
   :config
-  (command-log-mode t))
+  (global-command-log-mode t))
 
 (use-package inf-clojure
   :ensure t
@@ -1136,7 +1149,7 @@ opposite of what that option dictates."
   :ensure t
   :bind
   (
-   ;; ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
+   ;; ([(control c) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
    :map org-mode-map
    ([(meta up)] . org-backward-element)
    ([(meta down)] . org-forward-element)
@@ -1144,6 +1157,9 @@ opposite of what that option dictates."
   :init
   (setq org-support-shift-select t)
   (setq-default org-hide-emphasis-markers t))
+
+;; (use-package org-capture-pop-frame
+;;   :ensure t)
 
 ;; (use-package org
 ;;   :ensure t
@@ -1203,11 +1219,7 @@ opposite of what that option dictates."
  '(git-gutter+-deleted ((t (:foreground "firebrick3" :weight normal))))
  '(git-gutter+-modified ((t (:foreground "MediumOrchid2" :weight bold))))
  '(hs-face ((t (:foreground "dark cyan" :underline (:color "black" :style wave) :weight normal))))
- '(org-agenda-date ((t (:foreground "#715ab1" :height 1))))
- '(org-agenda-date-today ((t (:inherit nil :foreground "#715ab1" :overline t :underline t :height 1))))
- '(org-block ((t (:background "#fbf8ef" :foreground "#655370"))))
- '(org-block-begin-line ((t (:background "#fbf8ef" :foreground "#9380b2"))))
- '(org-block-end-line ((t (:background "#fbf8ef" :foreground "#9380b2"))))
+ '(org-tag ((t (:foreground "orange" :weight normal :height 0.8))))
  '(scroll-bar ((t (:background "red" :foreground "yellow"))))
  '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
  '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
@@ -1234,6 +1246,8 @@ opposite of what that option dictates."
    (quote
     ("d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879" "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0" "7b4d9b8a6ada8e24ac9eecd057093b0572d7008dbd912328231d0cada776065a" "38ba6a938d67a452aeb1dada9d7cdeca4d9f18114e9fc8ed2b972573138d4664" default)))
  '(default-input-method "TeX")
+ '(elpy-rpc-backend "jedi")
+ '(elpy-rpc-python-command "python3")
  '(fci-rule-color "#eee8d5")
  '(git-gutter-fr+-side (quote right-fringe))
  '(global-git-gutter+-mode t)
@@ -1280,11 +1294,12 @@ opposite of what that option dictates."
  '(org-startup-truncated nil)
  '(package-selected-packages
    (quote
-    (cljr-helm helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete yasnippet-bundle web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
+    (cloc company-jedi org-mac-link notmuch helm-unicode cljr-helm helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
  '(powerline-default-separator (quote utf-8))
+ '(python-shell-interpreter "python3")
  '(rainbow-delimiters-max-face-count 1)
  '(smartrep-mode-line-active-bg (solarized-color-blend "#859900" "#eee8d5" 0.2))
  '(sml/active-background-color "#34495e")
