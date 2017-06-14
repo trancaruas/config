@@ -4,13 +4,12 @@
 (require 'package)
 
 (setq package-archives
-      '(("GNU" . "https://elpa.gnu.org/packages/")
-        ("ORGMODE" . "http://orgmode.org/elpa/")
-        ("MARMALADE" . "https://marmalade-repo.org/packages/")
-        ("MELPA" . "https://melpa.org/packages/")
-        ("ELPA" . "https://tromey.com/elpa/")))
+      '(("GNU"       . "http://elpa.gnu.org/packages/")
+        ("ELPA"      . "http://tromey.com/elpa/")
+        ("MELPA"     . "http://melpa.org/packages/")
+        ("ORGMODE"   . "http://orgmode.org/elpa/")
+        ("MARMALADE" . "http://marmalade-repo.org/packages/")))
 
-;; (setq package-load-list '((org "9.0.1") all))
 (package-initialize)
 
 (unless package-archive-contents
@@ -22,29 +21,14 @@
 (require 'use-package)
 (setq use-package-verbose t)
 
-;; LOAD ORG AS EARLY AS POSSIBLE TO PREVENT BUILT-IN ORG FROM INITIALIZE
-;; BUILT-IN ORG CAUSE PROBLEMS
-;; TODO: check
-;; (setq package-load-list '((org "9.0.1") all))
-;; (setq package-load-list '((org nil) all))
-
-;; (use-package org
-;;   :ensure t
-;;   :bind
-;;   (
-;;    ;; ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
-;;    :map org-mode-map
-;;    ([(meta up)] . org-backward-element)
-;;    ([(meta down)] . org-forward-element)
-;;    ([(control tab)] . tabbar-forward))
-;;   :init
-;;   (setq org-support-shift-select t)
-;;   (setq-default org-hide-emphasis-markers t))
+(require 'benchmark-init)
+(benchmark-init/activate)
 
 
 ;; * BETTER DEFAULTS
 ;; Garbage collection thresold, default 0.76Mb
-(setq gc-cons-threshold 50000000)
+; (setq gc-cons-threshold 50000000)
+(setq gc-cons-threshold 100000000)
 
 (setq-default tab-width 8)
 (setq enable-local-eval t)
@@ -72,9 +56,7 @@
 
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
-(add-to-list 'exec-path "/usr/local/bin")
 (add-to-list 'load-path "~/.emacs.d/lisp")
-(setenv "PATH" (concat (getenv "PATH") ":/usr/local/bin"))
 
 (setq ring-bell-function 'ignore)
 (kill-buffer "*scratch*")
@@ -89,6 +71,13 @@
 (prefer-coding-system 'utf-8)
 
 ;; * SETTINGS & FUNCTIONS
+;; ** Platform-specific settings
+(cond
+ ((string-equal system-type "windows-nt")
+  (load "win"))
+ ((string-equal system-type "darwin")
+  (load "osx")))
+
 ;; ** Global keys
 (global-set-key [(control j)] 'eval-print-last-sexp)
 (global-set-key [(control c) (r)] 'replace-regexp)
@@ -97,15 +86,14 @@
 (global-set-key [(meta tab)] 'other-window)
 (global-set-key [(control shift space)] 'rectangle-mark-mode)
 
+
 ;; ** Mac specific keys
 (global-set-key [(super right)] 'end-of-line)
 (global-set-key [(super left)] 'beginning-of-line)
 (global-set-key [(super w)] 'kill-this-buffer)
 (global-set-key [(super b)] 'ido-switch-buffer)
 (global-set-key [(super ?-)] 'text-scale-decrease)
-;; (global-set-key (kbd "s--") 'text-scale-decrease)
 (global-set-key [(super ?=)] 'text-scale-increase)
-;; (global-set-key (kbd "s-=") 'text-scale-increase)
 (global-set-key [(super return)] 'toggle-frame-fullscreen)
 
 ;; ** enclose selection in parens
@@ -114,21 +102,14 @@
 (global-set-key (kbd "M-\"") 'insert-pair)
 (global-set-key (kbd "M-)") 'delete-pair)
 
-;; ** Mac specific settings
+;; ** Mac specific settings (seems working in windows too)
 ;; *** Transparency & fullscreen
-(setq transparency-level 90)
+(setq transparency-level 85)
 (set-frame-parameter nil 'alpha transparency-level)
 (add-hook 'after-make-frame-functions
           (lambda (selected-frame) (set-frame-parameter selected-frame 'alpha transparency-level)))
 (setq ns-use-native-fullscreen t)
-
-;; *** Open current dir in Finder
-(defun open-dir-in-finder ()
-      "Open a new Finder window to the path of the current buffer"
-      (interactive)
-      (shell-command "open ."))
-(bind-key "s-/" 'open-dir-in-finder)
-
+ 
 ;; ** Global settings & functions
 ;; *** General
 (defun read-file (file)
@@ -151,6 +132,15 @@ Alpha should be a float between 0 and 1."
 (eval-after-load "bytecomp"
   '(add-to-list 'byte-compile-not-obsolete-funcs
                 'preceding-sexp))
+
+(defun make-buffer-frame ()
+  "Create a new frame with a new empty buffer."
+  (interactive)
+  (let ((buffer (generate-new-buffer "untitled")))
+    (set-buffer-major-mode buffer)
+    (display-buffer buffer '(display-buffer-pop-up-frame . nil))))
+
+(global-set-key [(control n)] 'make-buffer-frame)
 
 ;; *** Macros
 (defun toggle-kbd-macro-recording-on ()
@@ -349,12 +339,12 @@ With argument, do this that many times."
 ;; ** Multuple cursors 
 (use-package multiple-cursors
   :ensure t
-  :bind (([(super down)] . mc/mark-next-like-this)
-         ([(super up)] . mc/mark-previous-like-this)
-         ([(super shift m)] . mc/edit-lines)
+  :bind ((     [(super down)] . mc/mark-next-like-this)
+         (       [(super up)] . mc/mark-previous-like-this)
+         (  [(super shift m)] . mc/edit-lines)
          ([(control shift m)] . mc/mark-all-regexp-in-region)
-         ([(super >)] . mc/mark-next-like-this)
-         ([(super <)] . mc/mark-previous-like-this))
+         (        [(super >)] . mc/mark-next-like-this)
+         (        [(super <)] . mc/mark-previous-like-this))
   :init
   (defun mc/mark-all-regexp-in-region (beg end)
    "find and mark all the parts in the region matching the given regexp search"
@@ -381,12 +371,27 @@ With argument, do this that many times."
 (use-package highlight-symbol
   :ensure t
   :bind
-  (([(control .)] . highlight-symbol-at-point)
+  (([(control .)] . highlight-symbol-or-region-at-point)
    ([(control >)] . highlight-symbol-next)
    ([(control <)] . highlight-symbol-prev))
   :init
-  (custom-set-faces '(highlight-symbol-face ((t (:background "mediumpurple4")))))
+  (defun get-region-symbol ()
+    (interactive)
+    (if mark-active
+        (let ((selection (buffer-substring-no-properties (region-beginning) (region-end))))
+          (if (= (length selection) 0)
+              nil
+            selection))
+      nil))
+  
+  (defun highlight-symbol-or-region-at-point ()
+    (interactive)
+    (let ((selection (get-region-symbol)))
+      (if selection
+          (highlight-symbol-at-point selection)
+        (highlight-symbol-at-point))))
 
+  (custom-set-faces '(highlight-symbol-face ((t (:background "mediumpurple4")))))
   ;;(add-hook 'prog-mode-hook (lambda () (highlight-symbol-mode)))
   ;;(setq highlight-symbol-on-navigation-p t)
   )
@@ -434,13 +439,53 @@ With argument, do this that many times."
   :ensure t
   :init
   (add-to-list 'company-backends 'company-emoji)
-  (defun --set-emoji-font (frame)
+  (defun set-emoji-font (frame)
     "Adjust the font settings of FRAME so Emacs can display emoji properly."
     (if (eq system-type 'darwin)
         (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") frame 'prepend)
-      (set-fontset-font t 'symbol (font-spec :family "Symbola") frame 'prepend)))
+      (set-fontset-font t 'symbol (font-spec :family "Noto Sans") frame 'prepend)
+      ;; (set-fontset-font t 'symbol (font-spec :family "EmojiOne Color") frame 'prepend)
+      ))
   (--set-emoji-font nil)
   (add-hook 'after-make-frame-functions '--set-emoji-font))
+
+;; (set-fontset-font t 'symbol (font-spec :family "Symbola") frame 'prepend)))
+;; (member "Segoe UI" (font-family-list))
+
+;; (member "Noto Sans" (font-family-list))
+;; ("EmojiOne Color" "Noto Sans" "Noto Sans UI" "Arial" "Arial Black" "Calibri" "Calibri Light" "Cambria" "Cambria Math" "Candara" "Comic Sans MS" "Consolas" ...)
+
+;; (defun set-emoji-font (frame)
+;;   "Adjust the font settings of FRAME so Emacs can display emoji properly."
+;;   (set-fontset-font t 'symbol (font-spec :family "Noto Sans") frame 'prepend))
+;; (defun set-emoji-font (frame)
+;;   "Adjust the font settings of FRAME so Emacs can display emoji properly."
+;;   (set-fontset-font t 'symbol (font-spec :family "EmojiOne Color") frame 'prepend))
+;; (defun set-emoji-font (frame)
+;;   "Adjust the font settings of FRAME so Emacs can display emoji properly."
+;;   (set-fontset-font t 'symbol (font-spec :family "Segoe UI") frame 'prepend))
+;; (add-hook 'after-make-frame-functions 'set-emoji-font)
+
+;; (set-emoji-font (selected-frame))
+
+;; (setq emojify-company-tooltips-p t)
+;; (setq emojify-display-style 'unicode)
+
+;; (set-selection-coding-system 'utf-16-le)
+;; (set-default-coding-systems 'utf-16-le)
+;; ρ
+
+;; (require 'unicode-fonts)
+;; (unicode-fonts-setup)
+;; unicode-fonts-blocks
+;; nil
+;; (scroll-bar-mode -1)
+
+
+(use-package yascroll
+  :ensure t
+  :init
+  (global-yascroll-bar-mode t))
 
 (use-package popup
   :ensure t
@@ -460,19 +505,6 @@ With argument, do this that many times."
                  :scroll-bar t
                  :margin t))))
 
-(use-package osx-dictionary
-  :ensure t
-  :bind ([(super shift d)] . popup-osx-dictionary)
-  :init
-  (defun popup-osx-dictionary ()
-    (interactive)
-    (let* ((thing (osx-dictionary--search (thing-at-point 'symbol))))
-      (popup-tip thing
-                 :point (point)
-                 :around t
-                 :height 30
-                 :scroll-bar nil
-                 :margin t))))
 
 (use-package google-translate
   :bind ([(super shift t)] . google-translate-at-point)
@@ -490,12 +522,6 @@ With argument, do this that many times."
   :ensure t
   :init
   (setq smooth-scroll-margin 2)
-;;   (setq mouse-wheel-scroll-amount '(1 ((shift) .1) ((control) . nil)))
-;;   (setq mouse-wheel-progressive-speed nil)
-;;   (defun window-half-height ()
-;;      (max 1 (/ (1- (window-height (selected-window))) 2)))
-;;   (global-set-key [next] (lambda () (interactive) (scroll-up (max 1 (/ (1- (window-height (selected-window))) 2)))))
-;;   (global-set-key [prior] (lambda () (interactive) (scroll-down (window-half-height)))))
 
   (setq scroll-margin 0
         scroll-conservatively 100000
@@ -564,7 +590,8 @@ With argument, do this that many times."
   (setq spaceline-show-default-input-method nil))
 
 (use-package outshine
-  :ensure outline
+  :ensure t
+  :requires (outline)
   :config
   (add-hook 'outline-minor-mode-hook 'outshine-hook-function)
   (add-hook 'emacs-lisp-mode-hook 'outline-minor-mode))
@@ -581,7 +608,7 @@ With argument, do this that many times."
 
 (use-package nlinum
   :ensure t
-  :bind ([(control shift n)] . nlinum-mode)
+  :bind ([(meta shift n)] . nlinum-mode)
   :config
   (setq nlinum-format " %3d "))
 
@@ -745,12 +772,18 @@ With argument, do this that many times."
 (use-package helm
   :ensure t
   :bind
-  (([remap describe-mode] . helm-describe-modes)
-   ([(meta x)] . helm-M-x)
-   ([(control x) (f)] . helm-find-files)
-   ([(control x) (b)] . helm-mini)
-   ([(super b)] . helm-mini)
-   ([(meta s) (o)] . helm-occur))
+  (:map helm-map
+        ([remap describe-mode] . helm-describe-modes)
+        ([(meta x)] . helm-M-x)
+        ([(control x) (f)] . helm-find-files)
+        ([(control x) (b)] . helm-mini)
+        ([(super b)] . helm-mini)
+        ;; ([(meta s) (o)] . helm-occur)
+        ([(tab)] . helm-execute-persistent-action)
+   :map helm-find-files-map
+        ([(tab)] . helm-execute-persistent-action)
+        ([(meta p)] . previous-history-element))
+
   :config
   (require 'highlight)
   (require 'helm-config)
@@ -800,7 +833,8 @@ With argument, do this that many times."
          ([(super \[)] . tabbar-backward)
          ([(super \])] . tabbar-forward)
          ([(super \{)] . tabbar-move-tab-left)
-         ([(super \})] . tabbar-move-tab-right))
+         ([(super \})] . tabbar-move-tab-right)
+         ([(control shift n)] . tabbar-move-current-buffer-to-new-frame))
   :config
   (require 'aquamacs-tabbar)
   ;; (require 'one-buffer-one-frame)
@@ -850,8 +884,7 @@ even if it's the only visible frame."
       (fset 'old-delete-window (symbol-function 'delete-window)))
 
   (defun tabbar-move-tab (&optional right)
-    "Move current tab to the left or to the right
-if RIGHT is set."
+    "Move current tab to the left or to the right if RIGHT is set."
     (let* ((ctabset nil)
            (ctabs nil)
            (ctab nil)
@@ -926,7 +959,8 @@ if RIGHT is set."
 
 ;; ** Development
 (use-package magit
-  :ensure magit-gitflow
+  :ensure t
+  :requires (magit-gitflow)
   :bind ([(control x) (g)] . magit-status)
   :config
   (add-hook 'magit-mode-hook 'turn-on-magit-gitflow))
@@ -972,19 +1006,19 @@ if RIGHT is set."
 
 (use-package cider
   :ensure t
+  :requires (popup)
   :bind (:map cider-repl-mode-map
               ([(control c) (d)] . describe-clojure-function-in-popup)
               ([(control c) (meta o)] . cider-repl-clear-buffer)
               
-              :map cider-mode-map
+         :map cider-mode-map
               ([(control c) (control d) (control c)] . cider-clojuredoc-web)
               ([(control j)] . cider-eval-defun-to-comment)
         
-              :map clojure-mode-map
+         :map clojure-mode-map
               ([(control c) (control d) (control c)] . cider-clojuredoc-web)
               ([(control c) (d)] . describe-clojure-function-in-popup))
   :init
-  (require 'popup)
   (setq cider-repl-display-help-banner nil)
   (setq cider-popup-stacktraces nil)
   (setq cider-hide-special-buffers t)
@@ -1055,7 +1089,8 @@ opposite of what that option dictates."
   (setq inf-clojure-program "planck"))
 
 (use-package slime
-  :ensure slime-company
+  :ensure t
+  :requires (slime-company)
   :bind (:map lisp-mode-map
               ([(control c) (d)] . describe-function-in-popup))
   :config
@@ -1090,11 +1125,11 @@ opposite of what that option dictates."
 (use-package go-mode
   :ensure t
   :bind (:map go-mode-map ([(meta ?.)] . godef-jump))
+  :requires (company-go)
   :init
   (add-to-list 'exec-path "~/src/go/bin")
   ;; (setenv "PATH" (concat (getenv "PATH") ":/Users/vader/src/go/bin"))
 
-  (require 'company-go)
   (add-hook 'go-mode-hook
             (lambda ()
               (set (make-local-variable 'company-backends) '(company-go))
@@ -1147,31 +1182,47 @@ opposite of what that option dictates."
 ;; ** Org-mode & markdown
 (use-package org
   :ensure t
+  :requires (org-protocol)
   :bind
-  (
-   ;; ([(control c) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
+  (([(control c) (c)] . org-capture)
    :map org-mode-map
-   ([(meta up)] . org-backward-element)
-   ([(meta down)] . org-forward-element)
-   ([(control tab)] . tabbar-forward))
+   ([(meta up)]     . org-backward-element)
+   ([(meta down)]   . org-forward-element)
+   ([(control tab)] . tabbar-forward)
+   ([(control y)]   . kill-current-line)
+   ([(control c) (l)] . org-toggle-link-display))
   :init
+  (setq org-directory "~/Sync/")
+  (setq org-default-notes-file "~/Sync/refile.org")
   (setq org-support-shift-select t)
-  (setq-default org-hide-emphasis-markers t))
+  (setq-default org-hide-emphasis-markers t)
+
+  (defun org-toggle-link-display ()
+    "Toggle the literal or descriptive display of links."
+    (interactive)
+    (if org-descriptive-links
+        (progn (org-remove-from-invisibility-spec '(org-link))
+               (org-restart-font-lock)
+               (setq org-descriptive-links nil))
+      (progn (add-to-invisibility-spec '(org-link))
+             (org-restart-font-lock)
+             (setq org-descriptive-links t))))
+  
+  (setq org-capture-templates
+      `(("c" "Link" entry (file+headline ,(concat org-directory "refile.org") "Inbox")
+         "* [[%:link][%:description]]\n%i%?\n"
+         :immediate-finish 1)
+        ("C" "Link prompted" entry (file+headline ,(concat org-directory "refile.org") "Inbox")
+         "* [[%:link][%:description]]\n%i%?\n"
+         :immediate-finish 1)))
+
+  (setq org-refile-targets (quote (("node.org" :regexp . "LINKS")
+                                   ("node.org" :regexp . "COLLECTION$")
+                                   ("node.org" :tag . "refile")
+                                   ("node.org" :tag . "quotes")))))
 
 ;; (use-package org-capture-pop-frame
 ;;   :ensure t)
-
-;; (use-package org
-;;   :ensure t
-;;   :bind
-;;   (:map org-mode-map
-;;         ([meta up] . org-backward-element)
-;;         ([meta down] . org-forward-element)
-;;         ([(control tab)] . tabbar-forward))
-;;   ([(control x) (o)] . (lambda () (interactive) (find-file "~/Sync/node.org")))
-;;   :init
-;;   (setq org-support-shift-select t)
-;;   (setq-default org-hide-emphasis-markers t))
 
 (use-package org-bullets
   :ensure t
@@ -1222,13 +1273,14 @@ opposite of what that option dictates."
  '(org-tag ((t (:foreground "orange" :weight normal :height 0.8))))
  '(scroll-bar ((t (:background "red" :foreground "yellow"))))
  '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
- '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
+ '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 80 :width normal :family "Pragmata Pro"))))
  '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "grey95" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey95")))))
  '(tabbar-selected-highlight ((t (:background "grey95" :foreground "black"))))
  '(tabbar-selected-modified ((t (:inherit tabbar-selected))))
  '(tabbar-separator ((t (:inherit tabbar-default :background "grey50" :foreground "grey50"))))
  '(tabbar-unselected-highlight ((t (:background "grey75" :foreground "black"))))
- '(tabbar-unselected-modified ((t (:inherit tabbar-unselected)))))
+ '(tabbar-unselected-modified ((t (:inherit tabbar-unselected))))
+ '(yascroll:thumb-text-area ((t (:background "midnight blue")))))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -1246,6 +1298,7 @@ opposite of what that option dictates."
    (quote
     ("d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879" "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0" "7b4d9b8a6ada8e24ac9eecd057093b0572d7008dbd912328231d0cada776065a" "38ba6a938d67a452aeb1dada9d7cdeca4d9f18114e9fc8ed2b972573138d4664" default)))
  '(default-input-method "TeX")
+ '(ediff-cmp-program "diff")
  '(elpy-rpc-backend "jedi")
  '(elpy-rpc-python-command "python3")
  '(fci-rule-color "#eee8d5")
@@ -1290,11 +1343,13 @@ opposite of what that option dictates."
  '(nrepl-message-colors
    (quote
     ("#dc322f" "#cb4b16" "#b58900" "#546E00" "#B4C342" "#00629D" "#2aa198" "#d33682" "#6c71c4")))
- '(org-bullets-bullet-list (quote ("◉" "○" "•" "◦" "◦")))
+ '(org-bullets-bullet-list (quote ("▶" "▷" "▹" "▻" "▻")))
+ '(org-download-timestamp "")
+ '(org-protocol-default-template-key "n")
  '(org-startup-truncated nil)
  '(package-selected-packages
    (quote
-    (cloc company-jedi org-mac-link notmuch helm-unicode cljr-helm helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
+    (yascroll unicode-fonts emojify add-hooks vdiff benchmark-init org-protocol ahk-mode kotlin-mode cloc company-jedi org-mac-link notmuch helm-unicode cljr-helm helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
@@ -1307,6 +1362,7 @@ opposite of what that option dictates."
  '(sml/inactive-background-color "#dfe4ea")
  '(sml/inactive-foreground-color "#34495e")
  '(tabbar-mode t nil (tabbar))
+ '(tabbar-use-images nil)
  '(term-default-bg-color "#fdf6e3")
  '(term-default-fg-color "#657b83")
  '(vc-annotate-background nil)
@@ -1340,7 +1396,11 @@ opposite of what that option dictates."
  '(xterm-color-names
    ["#eee8d5" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#073642"])
  '(xterm-color-names-bright
-   ["#fdf6e3" "#cb4b16" "#93a1a1" "#839496" "#657b83" "#6c71c4" "#586e75" "#002b36"]))
+   ["#fdf6e3" "#cb4b16" "#93a1a1" "#839496" "#657b83" "#6c71c4" "#586e75" "#002b36"])
+ '(yascroll:scroll-bar (quote (right-fringe left-fringe text-area))))
 
 (put 'narrow-to-page 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
+
+
+(benchmark-init/deactivate)
