@@ -16,13 +16,15 @@
    (package-refresh-contents))
 
 (unless (package-installed-p 'use-package)
+  (package-refresh-contents)
   (package-install 'use-package))
 
 (require 'use-package)
 (setq use-package-verbose t)
+(setq use-package-always-ensure t)
 
-(require 'benchmark-init)
-(benchmark-init/activate)
+;(require 'benchmark-init)
+;(benchmark-init/activate)
 
 
 ;; * BETTER DEFAULTS
@@ -30,6 +32,7 @@
 ; (setq gc-cons-threshold 50000000)
 (setq gc-cons-threshold 100000000)
 
+(set-cursor-color "red")
 (setq-default tab-width 8)
 (setq enable-local-eval t)
 (setq require-final-newline t)
@@ -40,8 +43,11 @@
 (setq-default help-window-select t)
 (setq-default indent-tabs-mode nil)
 (setq default-indicate-empty-lines t)
+(setq emacs-lisp-docstring-fill-column nil)
 (setq large-file-warning-threshold 100000000)
 (setq initial-buffer-choice "~/.emacs.d/scratch")
+
+(kill-buffer "*scratch*")
 
 (savehist-mode t)
 (tool-bar-mode -1)
@@ -59,7 +65,6 @@
 (add-to-list 'load-path "~/.emacs.d/lisp")
 
 (setq ring-bell-function 'ignore)
-(kill-buffer "*scratch*")
 
 (setq utf-translate-cjk-mode nil)
 (set-language-environment 'utf-8)
@@ -76,7 +81,17 @@
  ((string-equal system-type "windows-nt")
   (load "win"))
  ((string-equal system-type "darwin")
-  (load "osx")))
+  (load "osx"))
+ ((string-equal system-type "gnu/linux")
+  (load "lin")))
+
+;; (cond
+;;  ((string-equal window-system "w32")
+;;   (load "win"))
+;;  ((string-equal window-system "ns")
+;;   (load "osx"))
+;;  ((string-equal window-system "x")
+;;   (load "lin")))
 
 ;; ** Global keys
 (global-set-key [(control j)] 'eval-print-last-sexp)
@@ -85,7 +100,6 @@
 (global-set-key [(meta u)] 'transpose-buffers)
 (global-set-key [(meta tab)] 'other-window)
 (global-set-key [(control shift space)] 'rectangle-mark-mode)
-
 
 ;; ** Mac specific keys
 (global-set-key [(super right)] 'end-of-line)
@@ -96,7 +110,10 @@
 (global-set-key [(super ?=)] 'text-scale-increase)
 (global-set-key [(super return)] 'toggle-frame-fullscreen)
 
-;; ** enclose selection in parens
+(global-set-key [(home)] 'beginning-of-line)
+(global-set-key [(end)] 'end-of-line)
+
+;; ** enclose selection in parens TODO remove it, electric parens doing it automatically
 (global-set-key (kbd "M-[") 'insert-pair)
 (global-set-key (kbd "M-{") 'insert-pair)
 (global-set-key (kbd "M-\"") 'insert-pair)
@@ -104,7 +121,7 @@
 
 ;; ** Mac specific settings (seems working in windows too)
 ;; *** Transparency & fullscreen
-(setq transparency-level 85)
+(setq transparency-level 95)
 (set-frame-parameter nil 'alpha transparency-level)
 (add-hook 'after-make-frame-functions
           (lambda (selected-frame) (set-frame-parameter selected-frame 'alpha transparency-level)))
@@ -252,8 +269,14 @@ With argument, do this that many times."
 With argument, do this that many times."
   (interactive "p")
   (delete-word (- arg)))
-;;(global-unset-key (kbd "M-DEL"))
+
+(global-set-key [(meta delete)] 'backward-delete-word)
+(global-set-key [(control w)] 'backward-delete-word)
+
+;; TODO delete one of the below
+(global-set-key [(meta delete)] 'backward-delete-word)
 (global-set-key (kbd "M-DEL") 'backward-delete-word)
+
 
 ;; *** Automatic special keywords highlighting
 ;; TODO move fixed faces keywords highligthing to themed faces
@@ -345,7 +368,7 @@ With argument, do this that many times."
          ([(control shift m)] . mc/mark-all-regexp-in-region)
          (        [(super >)] . mc/mark-next-like-this)
          (        [(super <)] . mc/mark-previous-like-this))
-  :init
+  :config
   (defun mc/mark-all-regexp-in-region (beg end)
    "find and mark all the parts in the region matching the given regexp search"
    (interactive "r")
@@ -374,7 +397,7 @@ With argument, do this that many times."
   (([(control .)] . highlight-symbol-or-region-at-point)
    ([(control >)] . highlight-symbol-next)
    ([(control <)] . highlight-symbol-prev))
-  :init
+  :config
   (defun get-region-symbol ()
     (interactive)
     (if mark-active
@@ -401,7 +424,7 @@ With argument, do this that many times."
 (use-package company
   :ensure t
   :bind (([(tab)] . indent-or-complete))
-  :init
+  :config
   (global-company-mode '(not minibuffer-mode))
 
   (defun indent-or-complete ()
@@ -415,7 +438,8 @@ With argument, do this that many times."
             (company-complete-common)
           (indent-according-to-mode))))
     (when (outline-on-heading-p)
-      (outline-cycle)))
+      (outline-cycle))
+    )
   
   (custom-set-faces
    '(tooltip ((t (:background "mediumpurple4" :foreground "wheat"))))
@@ -446,7 +470,7 @@ With argument, do this that many times."
       (set-fontset-font t 'symbol (font-spec :family "Noto Sans") frame 'prepend)
       ;; (set-fontset-font t 'symbol (font-spec :family "EmojiOne Color") frame 'prepend)
       ))
-  (--set-emoji-font nil)
+;;   (--set-emoji-font nil)
   (add-hook 'after-make-frame-functions '--set-emoji-font))
 
 ;; (set-fontset-font t 'symbol (font-spec :family "Symbola") frame 'prepend)))
@@ -482,15 +506,15 @@ With argument, do this that many times."
 ;; (scroll-bar-mode -1)
 
 
-(use-package yascroll
-  :ensure t
-  :init
-  (global-yascroll-bar-mode t))
+;; (use-package yascroll
+;;   :ensure t
+;;   :init
+;;   (global-yascroll-bar-mode t))
 
 (use-package popup
   :ensure t
   :bind ([(control c) (d)] . describe-function-in-popup)
-  :init
+  :config
   (defun describe-function-in-popup ()
     (interactive)
     (let* ((thing (symbol-at-point))
@@ -508,7 +532,7 @@ With argument, do this that many times."
 
 (use-package google-translate
   :bind ([(super shift t)] . google-translate-at-point)
-  :init
+  :config
   (require 'google-translate-default-ui)
   (setq google-translate-default-source-language "en"
         google-translate-default-target-language "ru"
@@ -520,7 +544,7 @@ With argument, do this that many times."
 ;; TODO scrolling totally messed
 (use-package smooth-scrolling
   :ensure t
-  :init
+  :config
   (setq smooth-scroll-margin 2)
 
   (setq scroll-margin 0
@@ -559,7 +583,7 @@ With argument, do this that many times."
   :ensure t
   :bind (([(shift super f12)] . disable-active-theme)
          ([(super f12)] . switch-theme))
-  :init
+  :config
   (defun switch-theme (theme)
     "Disables any currently active theme and loads new theme."
     (interactive
@@ -591,8 +615,9 @@ With argument, do this that many times."
 
 (use-package outshine
   :ensure t
-  :requires (outline)
+  ;; :defer t
   :config
+  (require 'outline)
   (add-hook 'outline-minor-mode-hook 'outshine-hook-function)
   (add-hook 'emacs-lisp-mode-hook 'outline-minor-mode))
 
@@ -602,9 +627,11 @@ With argument, do this that many times."
   (([(control -)] . hs-toggle-hiding))
   :config
   ;; https://gist.github.com/jasonm23/514946
-  (hideshowvis-symbols)
   (define-fringe-bitmap 'hideshowvis-hideable-marker [0 0 254 124 56 16 0 0])
-  (define-fringe-bitmap 'hs-marker [0 32 48 56 60 56 48 32]))
+  (define-fringe-bitmap 'hs-marker [0 32 48 56 60 56 48 32])
+  ;; (hideshowvis-enable)
+  ;; (hideshowvis-symbols)
+)
 
 (use-package nlinum
   :ensure t
@@ -616,8 +643,7 @@ With argument, do this that many times."
   :ensure t
   :bind (:map dired-mode-map
               (([(k)] . dired-k)))
-  :init
-  (require 'dired)
+  :config
   (add-hook 'dired-initial-position-hook 'dired-k))
 
 (use-package spinner
@@ -762,12 +788,34 @@ With argument, do this that many times."
 
 ;; (use-package edit-server
 ;;   :if window-system
-;;   :init
+;;   :config
 ;;   (add-hook 'after-init-hook 'server-start t)
 ;;   (add-hook 'after-init-hook 'edit-server-start t))
 
 (use-package eval-sexp-fu
   :ensure t)
+
+(use-package ediff
+  :ensure t
+  :defer t
+  ;; :requires (winner-mode)
+  :config
+  (winner-mode)
+  (defvar ediff-saved-point)
+  (add-hook 'ediff-before-setup-hook
+            (lambda ()
+              (setq ediff-saved-point (point))
+              (set-frame-width (selected-frame) (* (frame-width) 2))))
+
+  (add-hook 'ediff-after-quit-hook-internal
+            (lambda ()
+              (progn
+                (winner-undo)
+                (goto-char ediff-saved-point)
+                (set-frame-width (selected-frame) (/ (frame-width) 2)))))
+
+  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+  (setq ediff-split-window-function 'split-window-horizontally))
 
 (use-package helm
   :ensure t
@@ -789,6 +837,8 @@ With argument, do this that many times."
   (require 'helm-config)
   (require 'helm-describe-modes)
 
+  (global-set-key [(meta x)] 'helm-M-x)
+  
   (helm-autoresize-mode t)
   (setq-default helm-autoresize-max-height 37)
   (setq-default helm-autoresize-min-height 37)
@@ -796,6 +846,7 @@ With argument, do this that many times."
   (require 'helm-describe-modes)
 
   (helm-mode t)
+  
   (helm-descbinds-mode t)
   (which-key-mode t)
 
@@ -824,6 +875,21 @@ With argument, do this that many times."
   (setq shackle-rules '(("\\`\\*helm.*?\\*\\'" :regexp t :align t :ratio 0.46)))
   (shackle-mode))
 
+;; *** Nice modeline
+(use-package doom-modeline
+  :ensure t
+  :hook (after-init . doom-modeline-mode)
+  :config
+  (setq doom-modeline-icon (display-graphic-p))
+  (setq doom-modeline-major-mode-icon t)
+  (setq doom-modeline-major-mode-color-icon t)
+  (setq doom-modeline-buffer-state-icon t)
+  (setq doom-modeline-buffer-modification-icon t)
+  (setq doom-modeline-buffer-encoding t)
+  (setq doom-modeline-indent-info t)
+  (setq doom-modeline-checker-simple-format t))
+
+
 ;; ** Customized Aquamacs dholm's tabbar
 (use-package tabbar
   :ensure t
@@ -848,22 +914,22 @@ With argument, do this that many times."
   (defun ns-frame-is-on-active-space-p (frame) t)
   (defun frame-iconified-p (frame) t)
 
-  (defcustom delete-window-preserve-buffer '("\*messages\*" "\*Help\*")
+  (defcustom delete-window-preserve-buffer '("\*Messages\*" "\*Help\*")
     "preserve these buffers when deleting window displaying them.
-when `one-buffer-one-frame-mode' or `tabbar-mode' are on,
-a buffer is killed when the last window displaying it is
-deleted by way of user interaction via high-level commands such
-as `close-window', unless the buffer name is listed in this
-customization variable, or this variable is set to `t'."
+when `one-buffer-one-frame-mode' or `tabbar-mode' are on, a buffer is
+killed when the last window displaying it is deleted by way of user
+interaction via high-level commands such as `close-window', unless the
+buffer name is listed in this customization variable, or this variable
+is set to `t'."
     :group 'aquamacs
     :group 'frames
     :type '(choice (repeat string)    
-                   (set (const "\*messages\*") (const "\*Help\*"))
+                   (set (const "\*Messages\*") (const "\*Help\*"))
                    (const t)))
   
   (defun killable-buffer-p (buf)
-    "returns non-nil if buffer buf may be be killed.
-customize `delete-window-preserve-buffer' to configure."
+    "returns non-nil if buffer buf may be be killed. customize
+`delete-window-preserve-buffer' to configure."
     (if (or (eq t delete-window-preserve-buffer)
             (member (get-bufname buf) delete-window-preserve-buffer))
         nil
@@ -871,8 +937,8 @@ customize `delete-window-preserve-buffer' to configure."
   
   (defun aquamacs-delete-window (&optional window)
     "remove window from the display.  default is `selected-window'.
-if window is the only one in its frame, then `delete-frame' too,
-even if it's the only visible frame."
+if window is the only one in its frame, then `delete-frame' too, even
+if it's the only visible frame."
     (interactive)
     (setq window (or window (selected-window)))
     (select-window window)
@@ -924,17 +990,24 @@ even if it's the only visible frame."
     "Move tab right."
     (interactive)
     (tabbar-move-tab t))
-                  
+
+  ;; inheritance does not work for those faces
+  (set-face-attribute 'tabbar-unselected nil :inherit nil :stipple nil :background "grey80" :foreground "grey50" :inverse-video nil :box '(:line-width 3 :color "grey80") :strike-through nil :overline nil :underline nil :slant 'normal :weight 'bold :height 110 :width 'normal :family "PragmataPro")
+  (set-face-attribute 'tabbar-unselected-modified nil :inherit nil :stipple nil :background "grey80" :foreground "grey50" :inverse-video nil :box '(:line-width 3 :color "grey80") :strike-through nil :overline nil :underline nil :slant 'normal :weight 'bold :height 110 :width 'normal :family "PragmataPro")
+  (set-face-attribute 'tabbar-unselected-highlight nil :inherit nil :stipple nil :background "grey90" :foreground "grey50" :inverse-video nil :box '(:line-width 3 :color "grey90") :strike-through nil :overline nil :underline nil :slant 'normal :weight 'bold :height 110 :width 'normal :family "PragmataPro")
+  
   (custom-set-faces
-   '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
    '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
-   '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "grey95" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey95")))))
-   '(tabbar-selected-highlight ((t (:background "grey95" :foreground "black"))))
-   '(tabbar-selected-modified ((t (:inherit tabbar-selected))))
+   '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
+   '(tabbar-key-binding ((t (:foreground "white" :slant normal :foreground "grey70"))))
    '(tabbar-separator ((t (:inherit tabbar-default :background "grey50" :foreground "grey50"))))
-   '(tabbar-unselected-highlight ((t (:background "grey75" :foreground "black"))))
-   '(tabbar-unselected-modified ((t (:inherit tabbar-unselected)))))
+
+   '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "#fbf8ef" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey96")  :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 110 :width normal :family "PragmataPro"))))
+   '(tabbar-selected-highlight ((t (:background "grey96" :foreground "black" :slant normal :box nil))))
+   '(tabbar-selected-modified ((t (:inherit tabbar-selected :slant normal)))))
+
   (tabbar-mode t))
+
 
 ;; ** Visual bookmarks
 (use-package bm
@@ -960,53 +1033,92 @@ even if it's the only visible frame."
 ;; ** Development
 (use-package magit
   :ensure t
-  :requires (magit-gitflow)
+  ;; :requires (magit-gitflow)
   :bind ([(control x) (g)] . magit-status)
   :config
   (add-hook 'magit-mode-hook 'turn-on-magit-gitflow))
 
 (use-package yasnippet
   :ensure t
-  :init
+  :config
   ;; (yas/initialize)
   )
 
 (use-package clj-refactor
   :ensure t
-  :init
+  :defer t
+  :config
   (setq cljr-warn-on-eval nil)
   (cljr-add-keybindings-with-prefix "C-x '"))
 
 (use-package cljr-helm
   :ensure t)
 
+(use-package elpy
+  :ensure t
+  :mode ( "\\.py\\'" . python-mode)
+  :bind (:map elpy-mode-map
+              ([(meta up)] . org-previous-visible-heading)
+              ([(meta down)] . org-next-visible-heading))
+  :init
+  ;; (hideshowvis-enable)
+  ;; (setq python-shell-interpreter "ipython"
+  ;;       python-shell-interpreter-args "-i --simple-prompt")
+
+  (setq python-shell-interpreter "python3"
+        python-shell-interpreter-args "-i")
+  (setq elpy-rpc-python-command "python3")
+  
+  :config
+  (outline-minor-mode t)
+
+  (defun describe-python-function-in-popup ()
+    (interactive)
+    (let* ((thing (symbol-at-point))
+           (description ;; (save-window-excursion
+                         (python-describe-at-point)
+                         ;; (switch-to-buffer "*Python Doc*")
+                         ;; (buffer-string)
+                         )
+           ;;))
+     (popup-tip description
+                :point (point)
+                :around t
+                :height 30
+                :scroll-bar nil
+                :margin t)))))
+
 (use-package clojure-mode
   :ensure t
+  :defer t
   :bind (:map clojure-mode-map
               ([(control x) (\")] . cljr-helm))
-  :init
+  :config
   (defun add-pretty-lambda ()
     "make some word or string show as pretty Unicode symbols"
     (setq prettify-symbols-alist
           '(("lambda" . 955) ; λ
-            ("fn" . 402) ; 
+            ("fn" . 402) ; fn
             ))
     (setq clojure--prettify-symbols-alist
-          '(("fn" . 402))))
+          '(;("fn" . 402)  ; fn
+            ("fn" . 2260) ; fn
+            ("#" . ?λ)
+            ("conso" . "consº")
+            )))
 
-  (add-hook 'clojure-mode-hook 'add-pretty-lambda)  
+  (add-hook 'clojure-mode-hook 'add-pretty-lambda)
   (add-hook 'clojure-mode-hook 'outline-minor-mode)
   (add-hook 'clojure-mode-hook 'hideshowvis-enable)
   (add-hook 'clojure-mode-hook 'prettify-symbols-mode)
   (add-hook 'clojure-mode-hook 'clj-refactor-mode)
-  
-  :config
+
   (define-clojure-indent
     (match 1)))
 
 (use-package cider
   :ensure t
-  :requires (popup)
+  ;; :requires (popup)
   :bind (:map cider-repl-mode-map
               ([(control c) (d)] . describe-clojure-function-in-popup)
               ([(control c) (meta o)] . cider-repl-clear-buffer)
@@ -1018,14 +1130,16 @@ even if it's the only visible frame."
          :map clojure-mode-map
               ([(control c) (control d) (control c)] . cider-clojuredoc-web)
               ([(control c) (d)] . describe-clojure-function-in-popup))
-  :init
+  :config
+  (setq cider-font-lock-dynamically nil)
+  (setq nrepl-log-messages nil)
+  (setq cider-pprint-fn 'fipp)
   (setq cider-repl-display-help-banner nil)
   (setq cider-popup-stacktraces nil)
   (setq cider-hide-special-buffers t)
   (add-hook 'cider-mode-hook 'eldoc-mode)
   (add-hook 'cider-repl-mode-hook #'company-mode)
 
-  :config
   (defun describe-clojure-function-in-popup ()
     (interactive)
     (let* ((thing (symbol-at-point))
@@ -1090,7 +1204,7 @@ opposite of what that option dictates."
 
 (use-package slime
   :ensure t
-  :requires (slime-company)
+  ;; :requires (slime-company)
   :bind (:map lisp-mode-map
               ([(control c) (d)] . describe-function-in-popup))
   :config
@@ -1100,7 +1214,7 @@ opposite of what that option dictates."
   (setq slime-lisp-implementations
       '((ccl ("/usr/local/bin/ccl64" "-K utf-8") :coding-system utf-8-unix)
         (sbcl ("/usr/local/bin/sbcl" "-quiet") :coding-system utf-8-unix)))
-  ;; (setq inferior-lisp-program "/usr/local/bin/sbcl")  
+  (setq inferior-lisp-program "/usr/local/bin/sbcl")
 
   (add-to-list 'slime-contribs 'slime-fancy)
   (setq slime-net-coding-system 'utf-8-unix)
@@ -1125,8 +1239,8 @@ opposite of what that option dictates."
 (use-package go-mode
   :ensure t
   :bind (:map go-mode-map ([(meta ?.)] . godef-jump))
-  :requires (company-go)
-  :init
+  ;; :requires (company-go)
+  :config
   (add-to-list 'exec-path "~/src/go/bin")
   ;; (setenv "PATH" (concat (getenv "PATH") ":/Users/vader/src/go/bin"))
 
@@ -1157,16 +1271,16 @@ opposite of what that option dictates."
   (show-paren-mode t)
   (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
   
-  (set-face-attribute 'show-paren-mismatch nil :weight 'extra-bold :foreground "red" :background "lemonchiffon")
+  (set-face-attribute 'show-paren-mismatch nil :weight 'extra-bold :foreground "red" :background (face-background 'default))
   ;; (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background "lemonchiffon")
-  (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background (face-background 'default))
+  (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "darkgreen" :background (face-background 'default))
 
+  ;; TODO advices not working
   (defadvice load-theme (after load-theme-after activate)
     ;; (set-face-attribute 'show-paren-mismatch nil :weight 'extra-bold :foreground "red" :background "lemonchiffon")
-    (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background "lemonchiffon"))
+    (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "navyblue" :background (face-background 'default)))
 
-  ;; (advice-add 'load-theme :after
-              ;; #'(lambda () (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "black" :background "lemonchiffon")))
+  (advice-add 'load-theme :after #'(lambda () (set-face-attribute 'show-paren-match nil :weight 'extra-bold :foreground "navyblue" :background "lemonchiffon")))
   )
 
 (use-package volatile-highlights
@@ -1182,20 +1296,34 @@ opposite of what that option dictates."
 ;; ** Org-mode & markdown
 (use-package org
   :ensure t
-  :requires (org-protocol)
-  :bind
-  (([(control c) (c)] . org-capture)
-   :map org-mode-map
-   ([(meta up)]     . org-backward-element)
-   ([(meta down)]   . org-forward-element)
-   ([(control tab)] . tabbar-forward)
-   ([(control y)]   . kill-current-line)
-   ([(control c) (l)] . org-toggle-link-display))
-  :init
+  :bind (([(control c) (c)] . org-capture)
+  :map org-mode-map
+  ([(meta up)] . org-previous-visible-heading)
+  ([(meta down)] . org-next-visible-heading)
+  ([(control tab)] . nil))
+   ;; ([(meta up)]     . org-backward-element)
+   ;;  ([(meta down)]   . org-forward-element)
+   ;;  ([(control tab)] . tabbar-forward)
+   ;;  ([(control y)]   . kill-current-line)
+   ;;  ([(control c) (l)] . org-toggle-link-display))
+  :config
+  (require 'org-protocol)
   (setq org-directory "~/Sync/")
   (setq org-default-notes-file "~/Sync/refile.org")
-  (setq org-support-shift-select t)
+
+  (setq org-support-shift-select 'always)
+  ;; (setq org-mode-shift-select-mode 'always)
   (setq-default org-hide-emphasis-markers t)
+
+  (remove-hook 'org-mode-hook #'turn-on-auto-fill)
+  (add-hook 'org-mode-hook 'turn-off-auto-fill)
+  
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (perl . t)
+     (python . t)
+     (clojure . t)))
 
   (defun org-toggle-link-display ()
     "Toggle the literal or descriptive display of links."
@@ -1219,7 +1347,45 @@ opposite of what that option dictates."
   (setq org-refile-targets (quote (("node.org" :regexp . "LINKS")
                                    ("node.org" :regexp . "COLLECTION$")
                                    ("node.org" :tag . "refile")
-                                   ("node.org" :tag . "quotes")))))
+                                   ("node.org" :tag . "quotes"))))
+
+  (message (concat "Org init: " (format-time-string "%Y-%m-%d %T"))))
+
+(use-package org-capture-pop-frame
+  :ensure t
+  :config
+  ;; Amend capture frame to lack header that breaks tabbar
+  (defun ocpf--org-capture (orig-fun &optional goto keys)
+    "Create a new frame and run org-capture."
+    (interactive)
+    (let ((frame-window-system
+           (cond ((eq system-type 'darwin) 'ns)
+                 ((eq system-type 'gnu/linux) 'x)
+                 ((eq system-type 'windows-nt) 'w32)))
+          (after-make-frame-functions
+           #'(lambda (frame)
+               (progn
+                 (select-frame frame)
+                 (setq word-wrap nil)
+                 (setq truncate-lines nil)
+                 (funcall orig-fun goto keys)))))
+      (make-frame
+       `((window-system . ,frame-window-system)
+         ,@ocpf-frame-parameters))))
+  (advice-add 'org-capture :around #'ocpf--org-capture)
+
+  ;; TODO convert to advice-add
+  (defadvice org-capture-kill (after delete-capture-frame activate) (delete-frame))
+  (defadvice org-capture-destroy (after delete-capture-frame activate) (delete-frame))
+  (defadvice org-capture-finalize (after delete-capture-frame activate) (delete-frame))
+  
+  (defadvice org-capture-select-template (around delete-capture-frame activate)
+    "Advise org-capture-select-template to close the frame on abort"
+    (unless (ignore-errors ad-do-it t)
+      (setq ad-return-value "q"))
+    (delete-frame))
+  
+  (message (concat "Org-capture-pop-frame init: " (format-time-string "%Y-%m-%d %T"))))
 
 ;; (use-package org-capture-pop-frame
 ;;   :ensure t)
@@ -1254,6 +1420,15 @@ opposite of what that option dictates."
   (add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
   (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode)))
 
+(use-package flyspell-correct
+  :after flyspell
+    ;; :bind (([(control c) (c)] . org-capture)
+  ;; :bind (:map flyspell-mode-map ([(control c) (\;)] . flyspell-popup-correct)))
+  :bind (:map flyspell-mode-map ("C-;" . flyspell-popup-correct)
+              ("C-." . nil)))
+
+;; (kill-buffer "*Messages*")
+
 ;; * CUSTOM FACES & VARS
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -1263,6 +1438,14 @@ opposite of what that option dictates."
  '(bm-fringe-persistent-face ((t (:background "darkorange1" :foreground "black"))))
  '(bm-persistent-face ((t (:background "darkorange1" :foreground "black"))))
  '(calendar-today ((t (:underline t :weight bold))))
+ '(company-preview ((t (:background "mediumpurple4" :foreground "wheat"))))
+ '(company-preview-common ((t (:inherit company-preview :background "mediumpurple4" :foreground "lightblue"))))
+ '(company-scrollbar-bg ((t (:background "lemonchiffon"))))
+ '(company-scrollbar-fg ((t (:background "mediumpurple4"))))
+ '(company-tooltip ((t (:inherit default :foreground "gray75" :background "lemonchiffon"))))
+ '(company-tooltip-common ((t (:inherit font-lock-constant-face :foreground "mediumpurple4"))))
+ '(company-tooltip-common-selection ((t (:inherit company-tooltip-selection :foreground "white" :background "mediumpurple4"))))
+ '(company-tooltip-selection ((t (:inherit font-lock-function-name-face :foreground "grey75" :background "mediumpurple4"))))
  '(cscope-line-number-face ((t (:foreground "dark cyan"))))
  '(cscope-separator-face ((t (:foreground "red" :underline t :weight bold))))
  '(flyspell-duplicate ((t (:inherit nil :underline t))))
@@ -1270,17 +1453,35 @@ opposite of what that option dictates."
  '(git-gutter+-deleted ((t (:foreground "firebrick3" :weight normal))))
  '(git-gutter+-modified ((t (:foreground "MediumOrchid2" :weight bold))))
  '(hs-face ((t (:foreground "dark cyan" :underline (:color "black" :style wave) :weight normal))))
- '(org-tag ((t (:foreground "orange" :weight normal :height 0.8))))
+ '(mc/cursor-bar-face ((t (:height 1.0))))
+ '(mc/cursor-face ((t nil)))
+ '(org-default ((t (:inherit default))))
+ '(org-document-info ((t (:foreground "midnight blue" :height 1))))
  '(scroll-bar ((t (:background "red" :foreground "yellow"))))
  '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
- '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 80 :width normal :family "Pragmata Pro"))))
- '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "grey95" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey95")))))
- '(tabbar-selected-highlight ((t (:background "grey95" :foreground "black"))))
- '(tabbar-selected-modified ((t (:inherit tabbar-selected))))
+ '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
+ '(tabbar-key-binding ((t (:foreground "white" :slant normal :foreground "grey70"))))
+ '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "#fbf8ef" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey96") :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 110 :width normal :family "PragmataPro"))))
+ '(tabbar-selected-highlight ((t (:background "grey96" :foreground "black" :slant normal :box nil))))
+ '(tabbar-selected-modified ((t (:inherit tabbar-selected :slant normal))))
  '(tabbar-separator ((t (:inherit tabbar-default :background "grey50" :foreground "grey50"))))
- '(tabbar-unselected-highlight ((t (:background "grey75" :foreground "black"))))
- '(tabbar-unselected-modified ((t (:inherit tabbar-unselected))))
+ '(tooltip ((t (:background "mediumpurple4" :foreground "wheat"))))
  '(yascroll:thumb-text-area ((t (:background "midnight blue")))))
+
+(set-face-italic-p 'italic nil)
+
+  ;; (dyn-let ((class '((class color) (min-colors 89))) ;;              ~~ Dark ~~                              ~~ Light ~~
+  ;;       ;;                                                          GUI       TER                           GUI       TER
+  ;;       ;; generic
+  ;;       (act1          (if (eq variant 'dark) (if (true-color-p) "#222226" "#121212") (if (true-color-p) "#e7e5eb" "#d7dfff")))
+  ;;       (act2          (if (eq variant 'dark) (if (true-color-p) "#5d4d7a" "#444444") (if (true-color-p) "#d3d3e7" "#afafd7")))
+  ;;       (base          (if (eq variant 'dark) (if (true-color-p) "#b2b2b2" "#b2b2b2") (if (true-color-p) "#655370" "#5f5f87")))
+  ;;       (base-dim      (if (eq variant 'dark) (if (true-color-p) "#686868" "#585858") (if (true-color-p) "#a094a2" "#afafd7")))
+  ;;       (bg1           (if (eq variant 'dark) (if (true-color-p) "#292b2e" "#262626") (if (true-color-p) "#fbf8ef" "#ffffff")))
+  ;;       (bg2           (if (eq variant 'dark) (if (true-color-p) "#212026" "#1c1c1c") (if (true-color-p) "#efeae9" "#e4e4e4")))
+  ;;       (bg3           (if (eq variant 'dark) (if (true-color-p) "#100a14" "#121212") (if (true-color-p) "#e3dedd" "#d0d0d0")))
+  ;;       (bg4           (if (eq variant 'dark) (if (true-color-p) "#0a0814" "#080808") (if (true-color-p) "#d2ceda" "#bcbcbc")))
+  ;;       (border        (if (eq variant 'dark) (if (true-color-p) "#5d4d7a" "#111111") (if (true-color-p) "#b3b9be" "#b3b9be")))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -1296,11 +1497,11 @@ opposite of what that option dictates."
  '(cua-read-only-cursor-color "#859900")
  '(custom-safe-themes
    (quote
-    ("d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879" "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0" "7b4d9b8a6ada8e24ac9eecd057093b0572d7008dbd912328231d0cada776065a" "38ba6a938d67a452aeb1dada9d7cdeca4d9f18114e9fc8ed2b972573138d4664" default)))
+    ("fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "d677ef584c6dfc0697901a44b885cc18e206f05114c8a3b7fde674fce6180879" "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0" "7b4d9b8a6ada8e24ac9eecd057093b0572d7008dbd912328231d0cada776065a" "38ba6a938d67a452aeb1dada9d7cdeca4d9f18114e9fc8ed2b972573138d4664" default)))
  '(default-input-method "TeX")
  '(ediff-cmp-program "diff")
  '(elpy-rpc-backend "jedi")
- '(elpy-rpc-python-command "python3")
+ '(elpy-rpc-python-command "python3" t)
  '(fci-rule-color "#eee8d5")
  '(git-gutter-fr+-side (quote right-fringe))
  '(global-git-gutter+-mode t)
@@ -1343,18 +1544,20 @@ opposite of what that option dictates."
  '(nrepl-message-colors
    (quote
     ("#dc322f" "#cb4b16" "#b58900" "#546E00" "#B4C342" "#00629D" "#2aa198" "#d33682" "#6c71c4")))
- '(org-bullets-bullet-list (quote ("▶" "▷" "▹" "▻" "▻")))
+ '(org-bullets-bullet-list (quote ("כֶ" "א" "ט" "ש" "צ")))
  '(org-download-timestamp "")
  '(org-protocol-default-template-key "n")
  '(org-startup-truncated nil)
+ '(org-support-shift-select (quote always))
+ '(outshine-fontify-whole-heading-line t)
  '(package-selected-packages
    (quote
-    (yascroll unicode-fonts emojify add-hooks vdiff benchmark-init org-protocol ahk-mode kotlin-mode cloc company-jedi org-mac-link notmuch helm-unicode cljr-helm helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
+    (nord-theme lispy helm-addressbook helm-cider-history helm-cscope helm-dictionary helm-firefox helm-git-files helm-git-grep helm-icons helm-org helm-org-ql helm-org-rifle helm-pydoc helm-slime helm-themes doom-themes doom cljr-helm blacken py-autopep8 helm-mode-manager material-theme doom-modeline sly header2 loccur smooth-scroll typopunct navi-mode outline-magic yascroll unicode-fonts emojify add-hooks vdiff benchmark-init org-protocol ahk-mode kotlin-mode cloc company-jedi org-mac-link notmuch helm-unicode helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
  '(powerline-default-separator (quote utf-8))
- '(python-shell-interpreter "python3")
+ '(python-shell-interpreter "python3" t)
  '(rainbow-delimiters-max-face-count 1)
  '(smartrep-mode-line-active-bg (solarized-color-blend "#859900" "#eee8d5" 0.2))
  '(sml/active-background-color "#34495e")
@@ -1362,7 +1565,6 @@ opposite of what that option dictates."
  '(sml/inactive-background-color "#dfe4ea")
  '(sml/inactive-foreground-color "#34495e")
  '(tabbar-mode t nil (tabbar))
- '(tabbar-use-images nil)
  '(term-default-bg-color "#fdf6e3")
  '(term-default-fg-color "#657b83")
  '(vc-annotate-background nil)
@@ -1403,4 +1605,5 @@ opposite of what that option dictates."
 (put 'narrow-to-region 'disabled nil)
 
 
-(benchmark-init/deactivate)
+;(benchmark-init/deactivate)
+
