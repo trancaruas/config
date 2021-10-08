@@ -1,6 +1,11 @@
 ;; -*- mode: Emacs-Lisp -*-
 
 ;; * PACKAGE SETUP
+(setenv "http_proxy" "http://www-proxy.us.oracle.com:80")
+(setenv "https_proxy" "http://www-proxy.us.oracle.com:80")
+(setq url-proxy-services '(("http" . "www-proxy.us.oracle.com:80")
+			   ("https" . "www-proxy.us.oracle.com:80")))
+
 (require 'package)
 
 (setq package-archives
@@ -8,7 +13,8 @@
         ("ELPA"      . "http://tromey.com/elpa/")
         ("MELPA"     . "http://melpa.org/packages/")
         ("ORGMODE"   . "http://orgmode.org/elpa/")
-        ("MARMALADE" . "http://marmalade-repo.org/packages/")))
+        ;; ("MARMALADE" . "http://marmalade-repo.org/packages/")
+        ))
 
 (package-initialize)
 
@@ -47,7 +53,7 @@
 (setq large-file-warning-threshold 100000000)
 (setq initial-buffer-choice "~/.emacs.d/scratch")
 
-(kill-buffer "*scratch*")
+;; (kill-buffer "*scratch*")
 
 (savehist-mode t)
 (tool-bar-mode -1)
@@ -113,11 +119,6 @@
 (global-set-key [(home)] 'beginning-of-line)
 (global-set-key [(end)] 'end-of-line)
 
-;; ** enclose selection in parens TODO remove it, electric parens doing it automatically
-(global-set-key (kbd "M-[") 'insert-pair)
-(global-set-key (kbd "M-{") 'insert-pair)
-(global-set-key (kbd "M-\"") 'insert-pair)
-(global-set-key (kbd "M-)") 'delete-pair)
 
 ;; ** Mac specific settings (seems working in windows too)
 ;; *** Transparency & fullscreen
@@ -231,6 +232,7 @@ WARNING: this is a simple implementation. The chance of generating the same UUID
            (random (expt 16 6))
            (random (expt 16 6)))))
 (global-set-key (kbd "C-x u") 'insert-random-uuid)
+
 
 ;; *** Buffer title
 (setq frame-title-format
@@ -613,13 +615,13 @@ With argument, do this that many times."
   (setq spaceline-minor-modes-separator " ")
   (setq spaceline-show-default-input-method nil))
 
-(use-package outshine
-  :ensure t
-  ;; :defer t
-  :config
-  (require 'outline)
-  (add-hook 'outline-minor-mode-hook 'outshine-hook-function)
-  (add-hook 'emacs-lisp-mode-hook 'outline-minor-mode))
+;; (use-package outshine
+;;   :ensure t
+;;   ;; :defer t
+;;   :config
+;;   (require 'outline)
+;;   (add-hook 'outline-minor-mode-hook 'outshine-hook-function)
+;;   (add-hook 'emacs-lisp-mode-hook 'outline-minor-mode))
 
 (use-package hideshowvis
   :ensure t
@@ -629,8 +631,8 @@ With argument, do this that many times."
   ;; https://gist.github.com/jasonm23/514946
   (define-fringe-bitmap 'hideshowvis-hideable-marker [0 0 254 124 56 16 0 0])
   (define-fringe-bitmap 'hs-marker [0 32 48 56 60 56 48 32])
-  ;; (hideshowvis-enable)
-  ;; (hideshowvis-symbols)
+  (hideshowvis-enable)
+  (hideshowvis-symbols)
 )
 
 (use-package nlinum
@@ -783,6 +785,7 @@ With argument, do this that many times."
   :config
   (setq server-use-tcp t)
   (setq server-host "localhost")
+  (server-force-delete)
   (server-start)
   (remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function))
 
@@ -817,6 +820,16 @@ With argument, do this that many times."
   (setq ediff-window-setup-function 'ediff-setup-windows-plain)
   (setq ediff-split-window-function 'split-window-horizontally))
 
+(use-package helm-describe-modes
+  :ensure t
+  :config
+  (global-set-key [remap describe-mode] #'helm-describe-modes))
+
+(use-package helm-descbinds
+  :ensure t
+  :config
+  (helm-descbinds-mode))
+
 (use-package helm
   :ensure t
   :bind
@@ -837,20 +850,19 @@ With argument, do this that many times."
   (require 'helm-config)
   (require 'helm-describe-modes)
 
+  (ido-mode -1)
   (global-set-key [(meta x)] 'helm-M-x)
   
   (helm-autoresize-mode t)
   (setq-default helm-autoresize-max-height 37)
   (setq-default helm-autoresize-min-height 37)
 
-  (require 'helm-describe-modes)
-
   (helm-mode t)
   
   (helm-descbinds-mode t)
   (which-key-mode t)
 
-  (defun helm-hide-minibuffer-maybe ()
+  (defun helm-hidqe-minibuffer-maybe ()
     (when (with-helm-buffer helm-echo-input-in-header-line)
       (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
         (overlay-put ov 'window (selected-window))
@@ -864,9 +876,10 @@ With argument, do this that many times."
 
   (golden-ratio-mode -1)
   (require 'ido-vertical-mode)
-  (ido-vertical-mode t)
-  (setq ido-use-virtual-buffers t)
-  (setq ido-vertical-define-keys 'C-n-and-C-p-only)
+
+  ;; (ido-vertical-mode t)
+  ;; (setq ido-use-virtual-buffers t)
+  ;; (setq ido-vertical-define-keys 'C-n-and-C-p-only)
   ;; (ido-mode t)
 
   ;; prevent messing with frames
@@ -874,6 +887,7 @@ With argument, do this that many times."
   (setq helm-display-function #'pop-to-buffer)
   (setq shackle-rules '(("\\`\\*helm.*?\\*\\'" :regexp t :align t :ratio 0.46)))
   (shackle-mode))
+
 
 ;; *** Nice modeline
 (use-package doom-modeline
@@ -1059,8 +1073,16 @@ if it's the only visible frame."
   :mode ( "\\.py\\'" . python-mode)
   :bind (:map elpy-mode-map
               ([(meta up)] . org-previous-visible-heading)
-              ([(meta down)] . org-next-visible-heading))
+              ([(meta down)] . org-next-visible-heading)
+         :map inferior-python-mode-map
+         ([(control c) (l)] . my-clear))
+
   :init
+  (defun my-clear ()
+    (interactive)
+    (let ((comint-buffer-maximum-size 0))
+      (comint-truncate-buffer)))
+
   ;; (hideshowvis-enable)
   ;; (setq python-shell-interpreter "ipython"
   ;;       python-shell-interpreter-args "-i --simple-prompt")
@@ -1265,6 +1287,11 @@ opposite of what that option dictates."
 (use-package flex-autopair
   :ensure t)
 
+(use-package smartparens
+  :ensure t
+  :config
+  :bind (([(control c) up] . sp-up-sexp)))
+
 (use-package highlight-parentheses
   :ensure t
   :config
@@ -1300,6 +1327,7 @@ opposite of what that option dictates."
   :map org-mode-map
   ([(meta up)] . org-previous-visible-heading)
   ([(meta down)] . org-next-visible-heading)
+  ([(control =)] . strike-through-for-org-mode)
   ([(control tab)] . nil))
    ;; ([(meta up)]     . org-backward-element)
    ;;  ([(meta down)]   . org-forward-element)
@@ -1452,6 +1480,7 @@ opposite of what that option dictates."
  '(git-gutter+-added ((t (:foreground "SpringGreen4" :weight normal))))
  '(git-gutter+-deleted ((t (:foreground "firebrick3" :weight normal))))
  '(git-gutter+-modified ((t (:foreground "MediumOrchid2" :weight bold))))
+ '(highlight-symbol-face ((t (:background "mediumpurple4"))))
  '(hs-face ((t (:foreground "dark cyan" :underline (:color "black" :style wave) :weight normal))))
  '(mc/cursor-bar-face ((t (:height 1.0))))
  '(mc/cursor-face ((t nil)))
@@ -1510,6 +1539,8 @@ opposite of what that option dictates."
  '(helm-echo-input-in-header-line t)
  '(helm-mode t)
  '(highlight-changes-colors (quote ("#d33682" "#6c71c4")))
+ '(highlight-parentheses-background-colors (quote ("#2492db" "#95a5a6" nil)))
+ '(highlight-parentheses-colors (quote ("#ecf0f1" "#ecf0f1" "#c0392b")))
  '(highlight-symbol-colors
    (--map
     (solarized-color-blend it "#fdf6e3" 0.25)
@@ -1532,8 +1563,6 @@ opposite of what that option dictates."
  '(hl-fg-colors
    (quote
     ("#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3" "#fdf6e3")))
- '(hl-paren-background-colors (quote ("#2492db" "#95a5a6" nil)))
- '(hl-paren-colors (quote ("#ecf0f1" "#ecf0f1" "#c0392b")))
  '(ido-enable-flex-matching t)
  '(ido-max-window-height 20)
  '(ido-vertical-define-keys (quote C-n-C-p-up-down-left-right))
@@ -1552,12 +1581,13 @@ opposite of what that option dictates."
  '(outshine-fontify-whole-heading-line t)
  '(package-selected-packages
    (quote
-    (nord-theme lispy helm-addressbook helm-cider-history helm-cscope helm-dictionary helm-firefox helm-git-files helm-git-grep helm-icons helm-org helm-org-ql helm-org-rifle helm-pydoc helm-slime helm-themes doom-themes doom cljr-helm blacken py-autopep8 helm-mode-manager material-theme doom-modeline sly header2 loccur smooth-scroll typopunct navi-mode outline-magic yascroll unicode-fonts emojify add-hooks vdiff benchmark-init org-protocol ahk-mode kotlin-mode cloc company-jedi org-mac-link notmuch helm-unicode helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons f3 flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
+    (pydoc jedi idle-highlight-mode xterm-color better-shell nord-theme lispy helm-addressbook helm-cider-history helm-cscope helm-dictionary helm-firefox helm-git-files helm-git-grep helm-icons helm-org helm-org-ql helm-org-rifle helm-pydoc helm-slime helm-themes doom-themes doom blacken py-autopep8 helm-mode-manager material-theme doom-modeline sly header2 loccur smooth-scroll typopunct navi-mode outline-magic yascroll unicode-fonts emojify add-hooks vdiff benchmark-init org-protocol ahk-mode kotlin-mode cloc company-jedi org-mac-link notmuch helm-unicode helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
  '(powerline-default-separator (quote utf-8))
- '(python-shell-interpreter "python3" t)
+ '(python-indent-offset 2)
+ '(python-shell-interpreter "python3")
  '(rainbow-delimiters-max-face-count 1)
  '(smartrep-mode-line-active-bg (solarized-color-blend "#859900" "#eee8d5" 0.2))
  '(sml/active-background-color "#34495e")
@@ -1567,6 +1597,7 @@ opposite of what that option dictates."
  '(tabbar-mode t nil (tabbar))
  '(term-default-bg-color "#fdf6e3")
  '(term-default-fg-color "#657b83")
+ '(tramp-verbose 6)
  '(vc-annotate-background nil)
  '(vc-annotate-color-map
    (quote
