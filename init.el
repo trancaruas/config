@@ -1,10 +1,9 @@
 ;; -*- mode: Emacs-Lisp -*-
 
 ;; * PACKAGE SETUP
-(setenv "http_proxy" "http://www-proxy.us.oracle.com:80")
-(setenv "https_proxy" "http://www-proxy.us.oracle.com:80")
-(setq url-proxy-services '(("http" . "www-proxy.us.oracle.com:80")
-			   ("https" . "www-proxy.us.oracle.com:80")))
+(let ((proxy-settings "~/.emacs.d/proxy.el"))
+ (when (file-exists-p proxy-settings)
+   (load-file proxy-settings)))
 
 (require 'package)
 
@@ -1465,35 +1464,19 @@ opposite of what that option dictates."
  '(bm-fringe-persistent-face ((t (:background "darkorange1" :foreground "black"))))
  '(bm-persistent-face ((t (:background "darkorange1" :foreground "black"))))
  '(calendar-today ((t (:underline t :weight bold))))
- '(company-preview ((t (:background "mediumpurple4" :foreground "wheat"))))
- '(company-preview-common ((t (:inherit company-preview :background "mediumpurple4" :foreground "lightblue"))))
- '(company-scrollbar-bg ((t (:background "lemonchiffon"))))
- '(company-scrollbar-fg ((t (:background "mediumpurple4"))))
- '(company-tooltip ((t (:inherit default :foreground "gray75" :background "lemonchiffon"))))
- '(company-tooltip-common ((t (:inherit font-lock-constant-face :foreground "mediumpurple4"))))
- '(company-tooltip-common-selection ((t (:inherit company-tooltip-selection :foreground "white" :background "mediumpurple4"))))
- '(company-tooltip-selection ((t (:inherit font-lock-function-name-face :foreground "grey75" :background "mediumpurple4"))))
  '(cscope-line-number-face ((t (:foreground "dark cyan"))))
  '(cscope-separator-face ((t (:foreground "red" :underline t :weight bold))))
- '(flyspell-duplicate ((t (:inherit nil :underline t))))
  '(git-gutter+-added ((t (:foreground "SpringGreen4" :weight normal))))
  '(git-gutter+-deleted ((t (:foreground "firebrick3" :weight normal))))
  '(git-gutter+-modified ((t (:foreground "MediumOrchid2" :weight bold))))
- '(highlight-symbol-face ((t (:background "mediumpurple4"))))
  '(hs-face ((t (:foreground "dark cyan" :underline (:color "black" :style wave) :weight normal))))
  '(mc/cursor-bar-face ((t (:height 1.0))))
  '(mc/cursor-face ((t nil)))
  '(org-default ((t (:inherit default))))
  '(org-document-info ((t (:foreground "midnight blue" :height 1))))
  '(scroll-bar ((t (:background "red" :foreground "yellow"))))
- '(tabbar-button ((t (:inherit tabbar-default :background "grey75" :box nil))))
- '(tabbar-default ((t (:inherit nil :stipple nil :background "grey80" :foreground "black" :box nil :strike-through nil :underline nil :slant normal :weight normal :height 110 :width normal :family "Pragmata Pro"))))
  '(tabbar-key-binding ((t (:foreground "white" :slant normal :foreground "grey70"))))
- '(tabbar-selected ((t (:inherit tabbar-default :stipple nil :background "#fbf8ef" :foreground "gray20" :inverse-video nil :box (:line-width 3 :color "grey96") :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 110 :width normal :family "PragmataPro"))))
  '(tabbar-selected-highlight ((t (:background "grey96" :foreground "black" :slant normal :box nil))))
- '(tabbar-selected-modified ((t (:inherit tabbar-selected :slant normal))))
- '(tabbar-separator ((t (:inherit tabbar-default :background "grey50" :foreground "grey50"))))
- '(tooltip ((t (:background "mediumpurple4" :foreground "wheat"))))
  '(yascroll:thumb-text-area ((t (:background "midnight blue")))))
 
 (set-face-italic-p 'italic nil)
@@ -1580,7 +1563,7 @@ opposite of what that option dictates."
  '(outshine-fontify-whole-heading-line t)
  '(package-selected-packages
    (quote
-    (pydoc jedi idle-highlight-mode xterm-color better-shell nord-theme lispy helm-addressbook helm-cider-history helm-cscope helm-dictionary helm-firefox helm-git-files helm-git-grep helm-icons helm-org helm-org-ql helm-org-rifle helm-pydoc helm-slime helm-themes doom-themes doom blacken py-autopep8 helm-mode-manager material-theme doom-modeline sly header2 loccur smooth-scroll typopunct navi-mode outline-magic yascroll unicode-fonts emojify add-hooks vdiff benchmark-init org-protocol ahk-mode kotlin-mode cloc company-jedi org-mac-link notmuch helm-unicode helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
+    (browse-at-remote pydoc jedi idle-highlight-mode xterm-color better-shell nord-theme lispy helm-addressbook helm-cider-history helm-cscope helm-dictionary helm-firefox helm-git-files helm-git-grep helm-icons helm-org helm-org-ql helm-org-rifle helm-pydoc helm-slime helm-themes doom-themes doom blacken py-autopep8 helm-mode-manager material-theme doom-modeline sly header2 loccur smooth-scroll typopunct navi-mode outline-magic yascroll unicode-fonts emojify add-hooks vdiff benchmark-init org-protocol ahk-mode kotlin-mode cloc company-jedi org-mac-link notmuch helm-unicode helm-swoop ox-reveal deft ical-pull org-babel-eval-in-repl org-beautify-theme org-capture-pop-frame org-download org-gcal dired-k expand-region elnode js-comint nodejs-repl js3-mode bm tabbar jade calfw-gcal howm el-pocket google-translate scala-mode git-timemachine tidy impatient-mode gorepl-mode hungry-delete company-emoji visual-regexp git-gutter-fringe+ delight popwin shackle calfw org-mac-iCal helm-ag go-complete web-mode clojure-snippets java-snippets all-the-icons projectile-speedbar helm-projectile neotree command-log-mode magit-gitflow request restclient elpy clj-refactor parinfer forth-mode ob-applescript volatile-highlights applescript-mode dockerfile-mode changelog-url osx-dictionary mode-icons flyspell-correct-helm helm-chrome helm-cider helm-clojuredocs helm-company helm-git helm-itunes helm-package helm-safari ivy counsel company-flx helm-flx lorem-ipsum org-bullets flatui-theme gist dtrace-script-mode 0blayout inf-clojure latex-preview-pane latex-math-preview latex-pretty-symbols magic-latex-buffer company-go go-mode pp+ rainbow-delimiters rainbow-mode anzu spacemacs-theme ido-vertical-mode golden-ratio highlight which-key helm-descbinds guide-key guide-key-tip flx-ido flx-isearch helm-describe-modes helm yasnippet waher-theme use-package swiper sublime-themes stripe-buffer spaceline solarized-theme soft-charcoal-theme smartparens slime-company popup perspective paredit paradox outshine nlinum nav-flash multiple-cursors move-text monokai-theme mic-paren markdown-mode magit inflections htmlize highlight-symbol highlight-parentheses hideshowvis flycheck flex-autopair eyebrowse edn company-quickhelp color-theme ace-jump-mode)))
  '(perl-indent-level 2)
  '(pos-tip-background-color "#eee8d5")
  '(pos-tip-foreground-color "#586e75")
