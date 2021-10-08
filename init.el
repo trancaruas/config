@@ -53,7 +53,7 @@
 (setq large-file-warning-threshold 100000000)
 (setq initial-buffer-choice "~/.emacs.d/scratch")
 
-;; (kill-buffer "*scratch*")
+(kill-buffer "*scratch*")
 
 (savehist-mode t)
 (tool-bar-mode -1)
@@ -120,8 +120,7 @@
 (global-set-key [(end)] 'end-of-line)
 
 
-;; ** Mac specific settings (seems working in windows too)
-;; *** Transparency & fullscreen
+;; ** Transparency & fullscreen
 (setq transparency-level 95)
 (set-frame-parameter nil 'alpha transparency-level)
 (add-hook 'after-make-frame-functions
@@ -615,13 +614,13 @@ With argument, do this that many times."
   (setq spaceline-minor-modes-separator " ")
   (setq spaceline-show-default-input-method nil))
 
-;; (use-package outshine
-;;   :ensure t
-;;   ;; :defer t
-;;   :config
-;;   (require 'outline)
-;;   (add-hook 'outline-minor-mode-hook 'outshine-hook-function)
-;;   (add-hook 'emacs-lisp-mode-hook 'outline-minor-mode))
+(use-package outshine
+  :ensure t
+  ;; :defer t
+  :config
+  (require 'outline)
+  (add-hook 'outline-minor-mode-hook 'outshine-mode)
+  (add-hook 'emacs-lisp-mode-hook 'outline-minor-mode))
 
 (use-package hideshowvis
   :ensure t
